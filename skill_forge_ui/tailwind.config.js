@@ -1,0 +1,50 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        'raw-black': '#000000',
+        'raw-white': '#FFFFFF',
+        'raw-link': '#0000FF',
+        'raw-success': '#008000',
+        'raw-warning': '#FFA500',
+        'raw-error': '#FF0000',
+        'space-deep': '#1E1B4B',
+        'space-surface': '#2E2A6E',
+        'space-sunken': '#141136',
+        'space-overlay': '#3D3890',
+        'space-nebula': '#A78BFA',
+        'space-star': '#FDE047',
+        'space-success': '#4ADE80',
+        'space-warning': '#FBBF24',
+        'space-error': '#F87171',
+        'space-info': '#60A5FA',
+        'space-text': '#E2DFFF',
+        'arcade-primary': '#2A3FE5',
+        'arcade-secondary': '#F4B9B0',
+        'arcade-surface': '#000000',
+      },
+      fontFamily: {
+        'raw': ['Archivo Black', 'sans-serif'],
+        'space': ['Fredoka', 'sans-serif'],
+        'arcade': ['Press Start 2P', 'monospace'],
+        'body': ['Work Sans', 'sans-serif'],
+        'body-space': ['DM Sans', 'sans-serif'],
+        'mono': ['Space Mono', 'monospace'],
+      },
+      borderRadius: {
+        'none': '0px',
+        'sm': '8px',
+        'md': '12px',
+        'lg': '16px',
+        'pill': '9999px',
+        'circle': '50%',
+      },
+    },
+  },
+  plugins: [],
+}
