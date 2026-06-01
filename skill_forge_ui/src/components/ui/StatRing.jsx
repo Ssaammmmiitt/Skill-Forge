@@ -1,4 +1,7 @@
+import { getThemeColors } from '../../utils/themeColors'
+
 const StatRing = ({ label, value, size = 80, system = 'star' }) => {
+  const colors = getThemeColors()
   const clampedValue = Math.min(100, Math.max(0, value))
   const strokeWidth = 8
   const radius = (size - strokeWidth) / 2
@@ -7,25 +10,25 @@ const StatRing = ({ label, value, size = 80, system = 'star' }) => {
 
   const systemStyles = {
     star: {
-      trackStroke: '#3D3890',
-      fillStroke: '#A78BFA',
-      textColor: '#E2DFFF',
+      trackStroke: colors.spaceOverlay,
+      fillStroke: colors.spaceNebula,
+      textColor: colors.spaceText,
       fontClass: 'font-body-space',
-      labelColor: '#A78BFA'
+      labelColor: colors.spaceNebula
     },
     raw: {
-      trackStroke: '#333333',
-      fillStroke: '#ffffff',
-      textColor: '#ffffff',
+      trackStroke: colors.rawText,
+      fillStroke: colors.rawText,
+      textColor: colors.rawText,
       fontClass: 'font-mono',
-      labelColor: '#ffffff'
+      labelColor: colors.rawText
     },
     arcade: {
-      trackStroke: '#1a1a1a',
-      fillStroke: '#2A3FE5',
-      textColor: '#FDE047',
+      trackStroke: colors.arcadePrimary,
+      fillStroke: colors.arcadePrimary,
+      textColor: colors.arcadePrimary,
       fontClass: 'font-arcade',
-      labelColor: '#FDE047'
+      labelColor: colors.arcadePrimary
     }
   }
 

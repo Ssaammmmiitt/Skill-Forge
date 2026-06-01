@@ -9,5 +9,9 @@ export const useNotifStore = create((set) => ({
   removeToast: (id) =>
     set((state) => ({
       toasts: state.toasts.filter((toast) => toast.id !== id)
-    }))
+    })),
+  levelUpPending: false,
+  levelUpData: null,
+  setLevelUp: (data) => set({ levelUpPending: true, levelUpData: data }),
+  clearLevelUp: () => set({ levelUpPending: false, levelUpData: null })
 }))

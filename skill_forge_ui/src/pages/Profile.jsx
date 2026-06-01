@@ -1,12 +1,18 @@
-import { useStudentStore } from '../store/useStudentStore'
-import { mockSessions } from '../utils/mockData'
+import { useEffect } from 'react'
+import { useStudent } from '../hooks/useStudent'
 import BadgeStar from '../components/ui/BadgeStar'
 import BadgeArcade from '../components/ui/BadgeArcade'
 import ProgressStar from '../components/ui/ProgressStar'
 import StatRing from '../components/ui/StatRing'
+import Spinner from '../components/ui/Spinner'
 
 const Profile = () => {
-  const student = useStudentStore(state => state.student)
+  const { student, loading, error } = useStudent()
+
+  // Document title
+  useEffect(() => {
+    document.title = `SKILL FORGE // ${student?.name || 'PROFILE'}`
+  }, [student?.name])
 
   const learningStyleMap = {
     fast_learner: 'completed',
@@ -28,6 +34,36 @@ const Profile = () => {
       .join('')
       .toUpperCase()
   }
+
+  if (loading) {
+    return (
+      <div className="min-h-full bg-space-deep flex items-center justify-center">
+        <Spinner variant="star" size="lg" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-full bg-space-deep px-16 py-20">
+        <p className="font-body-space text-space-error text-sm mt-4">
+          {error}
+        </p>
+      </div>
+    )
+  }
+
+  if (!student) {
+    return (
+      <div className="min-h-full bg-space-deep flex items-center justify-center">
+        <p className="font-body-space text-space-nebula text-sm">
+          No student data available
+        </p>
+      </div>
+    )
+  }
+
+  const mockSessions = student.recent_sessions || []
 
   return (
     <div className="min-h-full bg-space-deep">
@@ -73,7 +109,7 @@ const Profile = () => {
         </section>
 
         {/* SECTION 2: DIVIDER */}
-        <div className="border-b border-[#3D3890]" />
+        <div className="border-b border-space-overlay" />
 
         {/* SECTION 3: COGNITIVE ATTRIBUTES */}
         <section className="py-20">
@@ -140,7 +176,7 @@ const Profile = () => {
         </section>
 
         {/* SECTION 4: DIVIDER */}
-        <div className="border-b border-[#3D3890]" />
+        <div className="border-b border-space-overlay" />
 
         {/* SECTION 5: RECENT SESSIONS */}
         <section className="py-16 pb-24">

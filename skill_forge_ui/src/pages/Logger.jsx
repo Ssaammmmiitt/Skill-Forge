@@ -1,20 +1,30 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import ButtonRaw from '../components/ui/ButtonRaw'
 import { useNotifStore } from '../store/useNotifStore'
 import { useStudentStore } from '../store/useStudentStore'
+import { useAuthStore } from '../store/useAuthStore'
+import { logActivity } from '../api/student'
 
 const Logger = () => {
-  const navigate = useNavigate()
   const addToast = useNotifStore(state => state.addToast)
   const updateAttributes = useStudentStore(state => state.updateAttributes)
+  const user = useAuthStore(state => state.user)
+
+  // Document title
+  useEffect(() => {
+    document.title = 'SKILL FORGE // LOG ACTIVITY'
+  }, [])
 
   const [studyTopic, setStudyTopic] = useState('')
   const [studyDuration, setStudyDuration] = useState('')
   const [studyError, setStudyError] = useState(false)
+  const [studyLoading, setStudyLoading] = useState(false)
+  const [studyErrorMsg, setStudyErrorMsg] = useState('')
 
   const [sleepHours, setSleepHours] = useState('')
   const [sleepError, setSleepError] = useState(false)
+  const [sleepLoading, setSleepLoading] = useState(false)
+  const [sleepErrorMsg, setSleepErrorMsg] = useState('')
 
   const [tasks, setTasks] = useState([
     { id: 1, label: 'COMPLETE PRACTICE PROBLEM SET', checked: false },
@@ -24,55 +34,102 @@ const Logger = () => {
     { id: 5, label: 'PEER REVIEW EXCHANGE', checked: false }
   ])
 
-  const handleStudySubmit = () => {
+  const handleStudySubmit = async () => {
     const duration = parseFloat(studyDuration)
     if (!duration || duration <= 0) {
       setStudyError(true)
       return
     }
 
-    const intGain = Math.round(duration * 0.4)
-    updateAttributes({ INT: intGain })
-    addToast({
-      message: `+${intGain} INT`,
-      type: 'info'
-    })
+    setStudyLoading(true)
+    setStudyErrorMsg('')
+    try {
+      const result = await logActivity({
+        student_id: user?.student_id,
+        activity: 'study',
+        value: duration
+      })
+      
+      const delta = result.delta || {}
+      updateAttributes(delta)
+      
+      const intGain = delta.INT || 0
+      addToast({
+        message: `+${intGain} INT`,
+        type: 'info'
+      })
 
-    setStudyTopic('')
-    setStudyDuration('')
-    setStudyError(false)
+      setStudyTopic('')
+      setStudyDuration('')
+      setStudyError(false)
+    } catch (err) {
+      setStudyErrorMsg(`FAILED — ${err.message}`)
+    } finally {
+      setStudyLoading(false)
+    }
   }
 
-  const handleSleepSubmit = () => {
+  const handleSleepSubmit = async () => {
     const hours = parseFloat(sleepHours)
     if (!hours || hours <= 0) {
       setSleepError(true)
       return
     }
 
-    const energyGain = Math.min(100, Math.round(hours * 12))
-    updateAttributes({ energy: energyGain })
-    addToast({
-      message: `+${energyGain} ENERGY`,
-      type: 'info'
-    })
+    setSleepLoading(true)
+    setSleepErrorMsg('')
+    try {
+      const result = await logActivity({
+        student_id: user?.student_id,
+        activity: 'sleep',
+        value: hours
+      })
+      
+      const delta = result.delta || {}
+      updateAttributes(delta)
+      
+      const energyGain = delta.energy || 0
+      addToast({
+        message: `+${energyGain} ENERGY`,
+        type: 'info'
+      })
 
-    setSleepHours('')
-    setSleepError(false)
+      setSleepHours('')
+      setSleepError(false)
+    } catch (err) {
+      setSleepErrorMsg(`FAILED — ${err.message}`)
+    } finally {
+      setSleepLoading(false)
+    }
   }
 
-  const handleTasksSubmit = () => {
+  const handleTasksSubmit = async () => {
     const checkedCount = tasks.filter(t => t.checked).length
     if (checkedCount === 0) return
 
-    const wisGain = checkedCount * 5
-    updateAttributes({ WIS: wisGain })
-    addToast({
-      message: `+${wisGain} WIS`,
-      type: 'info'
-    })
+    try {
+      const result = await logActivity({
+        student_id: user?.student_id,
+        activity: 'task_done',
+        value: checkedCount
+      })
+      
+      const delta = result.delta || {}
+      updateAttributes(delta)
+      
+      const wisGain = delta.WIS || 0
+      addToast({
+        message: `+${wisGain} WIS`,
+        type: 'info'
+      })
 
-    setTasks(tasks.map(t => ({ ...t, checked: false })))
+      setTasks(tasks.map(t => ({ ...t, checked: false })))
+    } catch (err) {
+      addToast({
+        message: `FAILED — ${err.message}`,
+        type: 'error'
+      })
+    }
   }
 
   const toggleTask = (id) => {
@@ -84,207 +141,192 @@ const Logger = () => {
   const sleepDelta = sleepHours > 0 ? Math.min(100, Math.round(parseFloat(sleepHours) * 12)) : 0
 
   return (
-    <div className="min-h-screen bg-raw-white">
-      {/* Exit Button */}
-      <button
-        onClick={() => navigate('/')}
-        className="fixed top-6 right-6 font-raw text-[11px] uppercase tracking-[1px] text-raw-white bg-raw-black border-[3px] border-raw-white px-4 py-2 hover:bg-raw-white hover:text-raw-black hover:border-raw-black z-50"
-        style={{ borderRadius: '0px' }}
-      >
-        ← EXIT
-      </button>
-      {/* Page Header */}
-      <div className="bg-raw-black px-8 py-10">
-        <h1
-          className="font-raw text-raw-white text-[48px] uppercase"
-          style={{ lineHeight: '1.0', letterSpacing: '2px' }}
-        >
-          LOG ACTIVITY
-        </h1>
-        <p className="font-mono text-[#888] text-xs tracking-[2px] mt-2">
-          RECORD YOUR REAL-WORLD ACTIONS
-        </p>
-      </div>
-
-      {/* Section 1: Study */}
-      <div className="border-b-[5px] border-raw-black px-8 py-10">
-        <div className="relative mb-6">
-          <div
-            className="font-raw text-[48px] text-[#e0e0e0] absolute top-0 left-0"
-            style={{ lineHeight: '1.0' }}
-          >
-            01
-          </div>
-          <h2
-            className="font-raw text-[32px] text-raw-black uppercase relative z-10 pl-16"
-            style={{ lineHeight: '1.0' }}
-          >
-            STUDY SESSION
-          </h2>
+    <div className="min-h-screen bg-raw-bg p-6">
+      <div className="max-w-3xl mx-auto">
+        {/* Page Header */}
+        <div className="mb-8">
+          <h1 className="font-raw text-raw-text text-[32px] uppercase tracking-[2px] mb-2">
+            LOG ACTIVITY
+          </h1>
+          <p className="font-mono text-raw-text-secondary text-[13px] tracking-[1px]">
+            RECORD YOUR REAL-WORLD ACTIONS
+          </p>
         </div>
 
-        <div className="max-w-2xl space-y-6">
-          <div>
-            <label className="font-raw text-[11px] uppercase tracking-[1px] text-raw-black block mb-1">
-              SUBJECT
-            </label>
-            <input
-              type="text"
-              value={studyTopic}
-              onChange={(e) => setStudyTopic(e.target.value)}
-              placeholder="MATHEMATICS"
-              className="bg-[#F0F0F0] border-[3px] border-raw-black w-full font-mono text-[15px] px-3 py-2.5 focus:outline-none focus:border-[5px] placeholder:text-[#999]"
-              style={{ borderRadius: '0px' }}
-            />
-          </div>
-
-          <div>
-            <label className="font-raw text-[11px] uppercase tracking-[1px] text-raw-black block mb-1">
-              DURATION (MINUTES)
-            </label>
-            <input
-              type="number"
-              value={studyDuration}
-              onChange={(e) => {
-                setStudyDuration(e.target.value)
-                setStudyError(false)
-              }}
-              placeholder="45"
-              className={`bg-[#F0F0F0] w-full font-mono text-[15px] px-3 py-2.5 focus:outline-none placeholder:text-[#999] ${
-                studyError
-                  ? 'border-[3px] border-raw-error'
-                  : 'border-[3px] border-raw-black focus:border-[5px]'
-              }`}
-              style={{ borderRadius: '0px' }}
-            />
-            {studyError && (
-              <p className="font-mono text-[12px] text-raw-error mt-1">
-                ENTER A VALUE GREATER THAN 0
-              </p>
-            )}
-          </div>
-
-          {studyDelta > 0 && (
-            <div className="font-raw text-[24px] text-raw-black uppercase">
-              +{studyDelta} INTELLIGENCE
+        <div className="space-y-6">
+          {/* Section 1: Study */}
+          <div className="border-[3px] border-raw-border bg-raw-surface p-6" style={{ borderRadius: '0px' }}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="font-raw text-[20px] text-raw-text-secondary">01</div>
+              <h2 className="font-raw text-[20px] text-raw-text uppercase tracking-[1px]">
+                STUDY SESSION
+              </h2>
             </div>
-          )}
 
-          <ButtonRaw size="lg" onClick={handleStudySubmit}>
-            LOG STUDY SESSION
-          </ButtonRaw>
-        </div>
-      </div>
+            <div className="space-y-4">
+              <div>
+                <label className="font-raw text-[10px] uppercase tracking-[1px] text-raw-text-secondary block mb-1">
+                  SUBJECT
+                </label>
+                <input
+                  type="text"
+                  value={studyTopic}
+                  onChange={(e) => setStudyTopic(e.target.value)}
+                  placeholder="MATHEMATICS"
+                  className="bg-raw-bg border-[2px] border-raw-border w-full font-mono text-[14px] px-3 py-2 text-raw-text focus:outline-none focus:border-[3px] placeholder:text-raw-text-tertiary"
+                  style={{ borderRadius: '0px' }}
+                />
+              </div>
 
-      {/* Section 2: Sleep */}
-      <div className="border-b-[5px] border-raw-black px-8 py-10">
-        <div className="relative mb-6">
-          <div
-            className="font-raw text-[48px] text-[#e0e0e0] absolute top-0 left-0"
-            style={{ lineHeight: '1.0' }}
-          >
-            02
-          </div>
-          <h2
-            className="font-raw text-[32px] text-raw-black uppercase relative z-10 pl-16"
-            style={{ lineHeight: '1.0' }}
-          >
-            SLEEP
-          </h2>
-        </div>
-
-        <div className="max-w-2xl space-y-6">
-          <div>
-            <label className="font-raw text-[11px] uppercase tracking-[1px] text-raw-black block mb-1">
-              HOURS SLEPT
-            </label>
-            <input
-              type="number"
-              step="0.5"
-              value={sleepHours}
-              onChange={(e) => {
-                setSleepHours(e.target.value)
-                setSleepError(false)
-              }}
-              placeholder="7.5"
-              className={`bg-[#F0F0F0] w-full font-mono text-[15px] px-3 py-2.5 focus:outline-none placeholder:text-[#999] ${
-                sleepError
-                  ? 'border-[3px] border-raw-error'
-                  : 'border-[3px] border-raw-black focus:border-[5px]'
-              }`}
-              style={{ borderRadius: '0px' }}
-            />
-            {sleepError && (
-              <p className="font-mono text-[12px] text-raw-error mt-1">
-                ENTER A VALUE GREATER THAN 0
-              </p>
-            )}
-          </div>
-
-          {sleepDelta > 0 && (
-            <div className="font-raw text-[24px] text-raw-black uppercase">
-              +{sleepDelta} ENERGY
-            </div>
-          )}
-
-          <ButtonRaw size="lg" onClick={handleSleepSubmit}>
-            LOG SLEEP
-          </ButtonRaw>
-        </div>
-      </div>
-
-      {/* Section 3: Tasks */}
-      <div className="px-8 py-10">
-        <div className="relative mb-6">
-          <div
-            className="font-raw text-[48px] text-[#e0e0e0] absolute top-0 left-0"
-            style={{ lineHeight: '1.0' }}
-          >
-            03
-          </div>
-          <h2
-            className="font-raw text-[32px] text-raw-black uppercase relative z-10 pl-16"
-            style={{ lineHeight: '1.0' }}
-          >
-            TASKS COMPLETED
-          </h2>
-        </div>
-
-        <div className="max-w-2xl">
-          {tasks.map((task) => (
-            <div
-              key={task.id}
-              onClick={() => toggleTask(task.id)}
-              className="border-b-[3px] border-raw-black py-4 flex items-center gap-4 cursor-pointer"
-            >
-              <div
-                className={`w-5 h-5 border-[3px] border-raw-black flex items-center justify-center focus:border-[5px] ${
-                  task.checked ? 'bg-raw-black' : 'bg-raw-white'
-                }`}
-                style={{ borderRadius: '0px' }}
-              >
-                {task.checked && (
-                  <span className="font-raw text-raw-white text-[12px]">✓</span>
+              <div>
+                <label className="font-raw text-[10px] uppercase tracking-[1px] text-raw-text-secondary block mb-1">
+                  DURATION (MINUTES)
+                </label>
+                <input
+                  type="number"
+                  value={studyDuration}
+                  onChange={(e) => {
+                    setStudyDuration(e.target.value)
+                    setStudyError(false)
+                  }}
+                  placeholder="45"
+                  className={`bg-raw-bg w-full font-mono text-[14px] px-3 py-2 text-raw-text focus:outline-none placeholder:text-raw-text-tertiary ${
+                    studyError
+                      ? 'border-[2px] border-raw-error'
+                      : 'border-[2px] border-raw-border focus:border-[3px]'
+                  }`}
+                  style={{ borderRadius: '0px' }}
+                />
+                {studyError && (
+                  <p className="font-mono text-[11px] text-raw-error mt-1">
+                    ENTER A VALUE GREATER THAN 0
+                  </p>
                 )}
               </div>
-              <label className="font-raw text-raw-black text-sm uppercase tracking-[1px] cursor-pointer">
-                {task.label}
-              </label>
-            </div>
-          ))}
 
-          <div className="font-mono text-raw-black text-sm mt-4">
-            TASKS COMPLETED: {checkedCount} / 5
+              {studyDelta > 0 && (
+                <div className="font-raw text-[18px] text-raw-text uppercase">
+                  +{studyDelta} INTELLIGENCE
+                </div>
+              )}
+
+              <ButtonRaw 
+                size="md" 
+                onClick={handleStudySubmit}
+                disabled={studyLoading}
+              >
+                {studyLoading ? 'LOGGING...' : 'LOG STUDY SESSION'}
+              </ButtonRaw>
+              {studyErrorMsg && (
+                <div className="font-raw text-raw-error text-[12px] uppercase tracking-[1px] border-[2px] border-raw-error p-3">
+                  {studyErrorMsg}
+                </div>
+              )}
+            </div>
           </div>
 
-          {checkedCount > 0 && (
-            <div className="font-raw text-[24px] text-raw-black uppercase mt-4">
-              +{checkedCount * 5} WISDOM
+          {/* Section 2: Sleep */}
+          <div className="border-[3px] border-raw-border bg-raw-surface p-6" style={{ borderRadius: '0px' }}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="font-raw text-[20px] text-raw-text-secondary">02</div>
+              <h2 className="font-raw text-[20px] text-raw-text uppercase tracking-[1px]">
+                SLEEP
+              </h2>
             </div>
-          )}
 
-          <div className="mt-6">
-            <ButtonRaw size="lg" onClick={handleTasksSubmit}>
+            <div className="space-y-4">
+              <div>
+                <label className="font-raw text-[10px] uppercase tracking-[1px] text-raw-text-secondary block mb-1">
+                  HOURS SLEPT
+                </label>
+                <input
+                  type="number"
+                  step="0.5"
+                  value={sleepHours}
+                  onChange={(e) => {
+                    setSleepHours(e.target.value)
+                    setSleepError(false)
+                  }}
+                  placeholder="7.5"
+                  className={`bg-raw-bg w-full font-mono text-[14px] px-3 py-2 text-raw-text focus:outline-none placeholder:text-raw-text-tertiary ${
+                    sleepError
+                      ? 'border-[2px] border-raw-error'
+                      : 'border-[2px] border-raw-border focus:border-[3px]'
+                  }`}
+                  style={{ borderRadius: '0px' }}
+                />
+                {sleepError && (
+                  <p className="font-mono text-[11px] text-raw-error mt-1">
+                    ENTER A VALUE GREATER THAN 0
+                  </p>
+                )}
+              </div>
+
+              {sleepDelta > 0 && (
+                <div className="font-raw text-[18px] text-raw-text uppercase">
+                  +{sleepDelta} ENERGY
+                </div>
+              )}
+
+              <ButtonRaw 
+                size="md" 
+                onClick={handleSleepSubmit}
+                disabled={sleepLoading}
+              >
+                {sleepLoading ? 'LOGGING...' : 'LOG SLEEP'}
+              </ButtonRaw>
+              {sleepErrorMsg && (
+                <div className="font-raw text-raw-error text-[12px] uppercase tracking-[1px] border-[2px] border-raw-error p-3">
+                  {sleepErrorMsg}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Section 3: Tasks */}
+          <div className="border-[3px] border-raw-border bg-raw-surface p-6" style={{ borderRadius: '0px' }}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="font-raw text-[20px] text-raw-text-secondary">03</div>
+              <h2 className="font-raw text-[20px] text-raw-text uppercase tracking-[1px]">
+                TASKS COMPLETED
+              </h2>
+            </div>
+
+            <div className="space-y-2 mb-4">
+              {tasks.map((task) => (
+                <div
+                  key={task.id}
+                  onClick={() => toggleTask(task.id)}
+                  className="border-b-[2px] border-raw-border py-3 flex items-center gap-3 cursor-pointer hover:bg-raw-hover"
+                >
+                  <div
+                    className={`w-4 h-4 border-[2px] border-raw-border flex items-center justify-center ${
+                      task.checked ? 'bg-raw-border' : 'bg-raw-bg'
+                    }`}
+                    style={{ borderRadius: '0px' }}
+                  >
+                    {task.checked && (
+                      <span className="font-raw text-raw-bg text-[10px]">✓</span>
+                    )}
+                  </div>
+                  <label className="font-raw text-raw-text text-[11px] uppercase tracking-[1px] cursor-pointer">
+                    {task.label}
+                  </label>
+                </div>
+              ))}
+            </div>
+
+            <div className="font-mono text-raw-text-secondary text-[12px] mb-3">
+              TASKS COMPLETED: {checkedCount} / 5
+            </div>
+
+            {checkedCount > 0 && (
+              <div className="font-raw text-[18px] text-raw-text uppercase mb-4">
+                +{checkedCount * 5} WISDOM
+              </div>
+            )}
+
+            <ButtonRaw size="md" onClick={handleTasksSubmit}>
               LOG TASKS
             </ButtonRaw>
           </div>

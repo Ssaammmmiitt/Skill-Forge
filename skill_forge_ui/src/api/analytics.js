@@ -1,13 +1,5 @@
 import client from './client'
 
-export const getAnalytics = async (studentId) => {
-  // To be implemented
-}
+export const getAnalytics = (id) => client.get(`/analytics/${id}`)
 
-export const getLeaderboard = async () => {
-  // To be implemented
-}
-
-export const getProgressMetrics = async (studentId) => {
-  // To be implemented
-}
+export const getLeaderboard = (sortBy = 'xp') => client.get(`/leaderboard?sort_by=${sortBy}`)

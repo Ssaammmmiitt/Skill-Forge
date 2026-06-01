@@ -10,10 +10,10 @@ const ButtonRaw = ({ children, onClick, size = 'md', disabled = false }) => {
       onClick={onClick}
       disabled={disabled}
       className={`
-        bg-raw-black text-raw-white border-[3px] border-raw-black
+        bg-raw-black text-raw-white border-[3px] border-raw-border
         font-raw uppercase tracking-[2px]
-        hover:bg-raw-white hover:text-raw-black
-        transition-none
+        hover:bg-raw-surface hover:border-raw-white
+        transition-colors duration-150
         disabled:opacity-40 disabled:cursor-not-allowed
         ${sizeClasses[size]}
       `}

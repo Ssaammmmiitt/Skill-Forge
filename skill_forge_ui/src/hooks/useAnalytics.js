@@ -1,36 +1,35 @@
-import { useState } from 'react'
-import * as analyticsApi from '../api/analytics'
+import { useState, useEffect } from 'react'
+import { useAuthStore } from '../store/useAuthStore'
+import { getAnalytics } from '../api/analytics'
 
 export const useAnalytics = () => {
-  const [data, setData] = useState(null)
+  const [analytics, setAnalytics] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const user = useAuthStore(state => state.user)
 
-  const fetchAnalytics = async (studentId) => {
+  const fetchAnalytics = async () => {
+    const studentId = user?.student_id
+    if (!studentId) {
+      setError('No student ID available')
+      return
+    }
+    
     setLoading(true)
+    setError(null)
     try {
-      const result = await analyticsApi.getAnalytics(studentId)
-      setData(result)
-      setError(null)
+      const data = await getAnalytics(studentId)
+      setAnalytics(data)
     } catch (err) {
-      setError(err.message)
+      setError(err.message || 'Failed to load analytics')
     } finally {
       setLoading(false)
     }
   }
 
-  const fetchLeaderboard = async () => {
-    setLoading(true)
-    try {
-      const result = await analyticsApi.getLeaderboard()
-      setData(result)
-      setError(null)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
+  useEffect(() => {
+    fetchAnalytics()
+  }, [user?.student_id])
 
-  return { data, loading, error, fetchAnalytics, fetchLeaderboard }
+  return { analytics, loading, error, refetch: fetchAnalytics }
 }

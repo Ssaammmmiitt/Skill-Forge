@@ -1,13 +1,5 @@
 import client from './client'
 
-export const getStudent = async (studentId) => {
-  // To be implemented
-}
+export const getStudent = (id) => client.get(`/student/${id}`)
 
-export const updateStudent = async (studentId, data) => {
-  // To be implemented
-}
-
-export const getStudentSessions = async (studentId) => {
-  // To be implemented
-}
+export const logActivity = (body) => client.post('/student/log-activity', body)

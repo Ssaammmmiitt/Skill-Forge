@@ -1,4 +1,4 @@
-const ButtonArcade = ({ children, onClick, size = 'md', disabled = false }) => {
+const ButtonArcade = ({ children, onClick, size = 'md', disabled = false, active = false }) => {
   const sizeClasses = {
     sm: 'px-4 py-1.5 min-h-[32px]',
     md: 'px-6 py-2.5 min-h-[44px]',
@@ -11,7 +11,7 @@ const ButtonArcade = ({ children, onClick, size = 'md', disabled = false }) => {
       disabled={disabled}
       className={`
         bg-arcade-surface text-arcade-primary
-        border-[3px] border-dotted border-arcade-primary
+        border-[3px] ${active ? 'border-solid' : 'border-dotted'} border-arcade-primary
         font-arcade text-[9px] tracking-[1px]
         hover:bg-arcade-primary hover:text-arcade-surface
         transition-colors duration-150

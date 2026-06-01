@@ -1,15 +1,23 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useStudentStore } from '../store/useStudentStore'
-import { mockSessions } from '../utils/mockData'
+import { useStudent } from '../hooks/useStudent'
+import { useAnalytics } from '../hooks/useAnalytics'
 import MetricStar from '../components/ui/MetricStar'
 import MetricArcade from '../components/ui/MetricArcade'
 import ButtonRaw from '../components/ui/ButtonRaw'
 import BadgeStar from '../components/ui/BadgeStar'
 import ProgressStar from '../components/ui/ProgressStar'
+import Spinner from '../components/ui/Spinner'
 
 const Dashboard = () => {
   const navigate = useNavigate()
-  const student = useStudentStore(state => state.student)
+  const { student, loading: studentLoading } = useStudent()
+  const { analytics, loading: analyticsLoading } = useAnalytics()
+
+  // Document title
+  useEffect(() => {
+    document.title = 'SKILL FORGE // DASHBOARD'
+  }, [])
 
   const xpPerLevel = 500
   const currentLevelXP = student.xp % xpPerLevel
@@ -17,9 +25,17 @@ const Dashboard = () => {
   const nextLevel = student.level + 1
   const xpToNextLevel = nextLevel * xpPerLevel
 
+  const scoreTrend = analytics?.score_trend || []
+  const sessions = scoreTrend.map((score, idx) => ({
+    topic: `Session ${idx + 1}`,
+    quiz_score: score,
+    difficulty: 5,
+    time_taken: 120
+  }))
+
   const calculateAccuracy = () => {
-    if (mockSessions.length === 0) return 0
-    const avgScore = mockSessions.reduce((sum, s) => sum + s.quiz_score, 0) / mockSessions.length
+    if (scoreTrend.length === 0) return 0
+    const avgScore = scoreTrend.reduce((sum, s) => sum + s, 0) / scoreTrend.length
     return Math.round(avgScore)
   }
 
@@ -34,6 +50,14 @@ const Dashboard = () => {
     if (difficulty >= 1 && difficulty <= 4) return 'pending'
     if (difficulty >= 5 && difficulty <= 7) return 'completed'
     return 'completed'
+  }
+
+  if (!student) {
+    return (
+      <div className="min-h-full bg-space-deep flex items-center justify-center">
+        <Spinner variant="star" size="lg" />
+      </div>
+    )
   }
 
   return (
@@ -77,19 +101,15 @@ const Dashboard = () => {
 
       {/* ARCADE SCORE BAND - Retro game stats */}
       <section
-        className="bg-arcade-surface px-10 py-8"
-        style={{
-          borderTop: '3px dotted #FDE047',
-          borderBottom: '3px dotted #FDE047'
-        }}
+        className="border-t-[3px] border-b-[3px] px-10 py-8 border-dotted border-arcade-primary"
       >
         <div className="font-arcade text-[8px] text-arcade-secondary tracking-[3px] mb-6">
           GAME STATS
         </div>
         <div className="flex gap-6">
-          <MetricArcade label="SESSIONS" value={mockSessions.length} />
-          <MetricArcade label="BEST SCORE" value={Math.max(...mockSessions.map(s => s.quiz_score))} />
-          <MetricArcade label="RANK" value="#02" />
+          <MetricArcade label="SESSIONS" value={scoreTrend.length} />
+          <MetricArcade label="BEST SCORE" value={scoreTrend.length > 0 ? Math.max(...scoreTrend) : 0} />
+          <MetricArcade label="RANK" value="#--" />
         </div>
       </section>
 
@@ -117,7 +137,10 @@ const Dashboard = () => {
           RECENT SESSIONS
         </div>
 
-        {mockSessions.map((session, index) => (
+        {sessions.length === 0 ? (
+          <div className="font-mono text-raw-white text-xs">NO SESSIONS YET</div>
+        ) : (
+          sessions.map((session, index) => (
           <div
             key={index}
             className="flex justify-between items-center border-b border-space-overlay py-4"
@@ -137,7 +160,8 @@ const Dashboard = () => {
               </span>
             </div>
           </div>
-        ))}
+          ))
+        )}
       </section>
     </div>
   )

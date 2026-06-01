@@ -1,7 +1,11 @@
+import { memo } from 'react'
 import { LineChart as RechartsLine, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import CardStar from '../ui/CardStar'
+import { getThemeColors } from '../../utils/themeColors'
 
-const LineChart = ({ data, title = 'Progress Over Time', yLabel = '' }) => {
+const LineChart = memo(({ data, title = 'Progress Over Time', yLabel = '' }) => {
+  const colors = getThemeColors()
+  
   return (
     <CardStar>
       <h3 className="font-space font-bold text-[22px] text-raw-white mb-4">
@@ -9,35 +13,37 @@ const LineChart = ({ data, title = 'Progress Over Time', yLabel = '' }) => {
       </h3>
       <ResponsiveContainer width="100%" height={300}>
         <RechartsLine data={data}>
-          <CartesianGrid stroke="#3D3890" strokeDasharray="4 4" />
+          <CartesianGrid stroke={colors.spaceOverlay} strokeDasharray="4 4" />
           <XAxis
             dataKey="round"
-            tick={{ fill: '#A78BFA', fontFamily: 'Space Mono', fontSize: 11 }}
+            tick={{ fill: colors.spaceNebula, fontFamily: 'Space Mono', fontSize: 11 }}
           />
           <YAxis
             label={yLabel ? { value: yLabel, angle: -90, position: 'insideLeft' } : undefined}
-            tick={{ fill: '#A78BFA', fontFamily: 'Space Mono', fontSize: 11 }}
+            tick={{ fill: colors.spaceNebula, fontFamily: 'Space Mono', fontSize: 11 }}
           />
           <Line
             dataKey="value"
-            stroke="#FDE047"
+            stroke={colors.spaceStar}
             strokeWidth={2}
-            dot={{ fill: '#FDE047', r: 4 }}
+            dot={{ fill: colors.spaceStar, r: 4 }}
             type="monotone"
           />
           <Tooltip
             contentStyle={{
-              background: '#2E2A6E',
-              border: '1px solid #A78BFA',
+              background: colors.spaceSurface,
+              border: `1px solid ${colors.spaceNebula}`,
               borderRadius: '8px',
               fontFamily: 'DM Sans',
-              color: '#E2DFFF'
+              color: colors.spaceText
             }}
           />
         </RechartsLine>
       </ResponsiveContainer>
     </CardStar>
   )
-}
+})
+
+LineChart.displayName = 'LineChart'
 
 export default LineChart

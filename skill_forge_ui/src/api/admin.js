@@ -1,13 +1,5 @@
 import client from './client'
 
-export const getAllStudents = async () => {
-  // To be implemented
-}
+export const getMetrics = () => client.get('/admin/metrics')
 
-export const getSystemMetrics = async () => {
-  // To be implemented
-}
-
-export const updateSystemConfig = async (config) => {
-  // To be implemented
-}
+export const triggerRetrain = () => client.post('/admin/retrain')

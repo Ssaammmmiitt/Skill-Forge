@@ -1,5 +1,83 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════════════════════
+   THEME SYSTEM — Dark & Light Mode for Fusion Design
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root[data-theme="dark"] {
+  /* RawBlock System - Dark Mode */
+  --raw-bg: #0A0A0A;
+  --raw-surface: #151515;
+  --raw-text: #FFFFFF;
+  --raw-text-secondary: #A0A0A0;
+  --raw-text-tertiary: #707070;
+  --raw-border: #FFFFFF;
+  --raw-link: #5599FF;
+  --raw-success: #00C853;
+  --raw-warning: #FFB300;
+  --raw-error: #FF1744;
+  --raw-hover: #1F1F1F;
+  
+  /* StarChart System - Dark Mode */
+  --space-bg: #0F0E1E;
+  --space-surface: #1A1830;
+  --space-sunken: #0A0918;
+  --space-overlay: #2D2854;
+  --space-nebula: #A78BFA;
+  --space-star: #FDE047;
+  --space-success: #4ADE80;
+  --space-warning: #FBBF24;
+  --space-error: #F87171;
+  --space-info: #60A5FA;
+  --space-text: #E8E5FF;
+  --space-text-secondary: #A8A5C0;
+  
+  /* Arcade System - Dark Mode */
+  --arcade-bg: #0A0A0A;
+  --arcade-surface: #151515;
+  --arcade-primary: #FDE047;
+  --arcade-secondary: #A0A0A0;
+  --arcade-danger: #FF1744;
+  --arcade-hover: #1F1F1F;
+}
+
+:root[data-theme="light"] {
+  /* RawBlock System - Light Mode */
+  --raw-bg: #FAFAFA;
+  --raw-surface: #FFFFFF;
+  --raw-text: #0A0A0A;
+  --raw-text-secondary: #505050;
+  --raw-text-tertiary: #808080;
+  --raw-border: #0A0A0A;
+  --raw-link: #1976D2;
+  --raw-success: #00C853;
+  --raw-warning: #FF8F00;
+  --raw-error: #D32F2F;
+  --raw-hover: #F0F0F0;
+  
+  /* StarChart System - Light Mode */
+  --space-bg: #F5F3FF;
+  --space-surface: #FFFFFF;
+  --space-sunken: #EBE8FF;
+  --space-overlay: #DDD6FE;
+  --space-nebula: #8B5CF6;
+  --space-star: #D97706;
+  --space-success: #059669;
+  --space-warning: #EA580C;
+  --space-error: #DC2626;
+  --space-info: #2563EB;
+  --space-text: #1E1B4B;
+  --space-text-secondary: #64748B;
+  
+  /* Arcade System - Light Mode */
+  --arcade-bg: #FFFEF5;
+  --arcade-surface: #FFFDF0;
+  --arcade-primary: #F59E0B;
+  --arcade-secondary: #6B7280;
+  --arcade-danger: #DC2626;
+  --arcade-hover: #FFF9E6;
+}
+
 @keyframes slide-in {
   from {
     transform: translateX(100%);

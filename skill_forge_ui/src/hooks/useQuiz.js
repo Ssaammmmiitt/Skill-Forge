@@ -1,39 +1,29 @@
-import { useState } from 'react'
-import { useQuizStore } from '../store/useQuizStore'
-import * as quizApi from '../api/quiz'
+import { useState, useEffect } from 'react'
+import { getQuiz } from '../api/quiz'
 
-export const useQuiz = () => {
+export const useQuiz = (difficulty) => {
+  const [questions, setQuestions] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const { currentQuestion, setCurrentQuestion, addToHistory } = useQuizStore()
 
-  const fetchQuestion = async (studentId) => {
+  const fetchQuestions = async () => {
+    if (!difficulty) return
+    
     setLoading(true)
+    setError(null)
     try {
-      const question = await quizApi.getAdaptiveQuestion(studentId)
-      setCurrentQuestion(question)
-      setError(null)
+      const data = await getQuiz(difficulty)
+      setQuestions(data.questions || [])
     } catch (err) {
-      setError(err.message)
+      setError(err.message || 'Failed to load questions')
     } finally {
       setLoading(false)
     }
   }
 
-  const submitAnswer = async (data) => {
-    setLoading(true)
-    try {
-      const result = await quizApi.submitQuizAnswer(data)
-      addToHistory(result)
-      setError(null)
-      return result
-    } catch (err) {
-      setError(err.message)
-      throw err
-    } finally {
-      setLoading(false)
-    }
-  }
+  useEffect(() => {
+    fetchQuestions()
+  }, [difficulty])
 
-  return { currentQuestion, loading, error, fetchQuestion, submitAnswer }
+  return { questions, loading, error, refetch: fetchQuestions }
 }

@@ -1,14 +1,198 @@
+import { useState, useEffect } from 'react'
+import { getMetrics, triggerRetrain } from '../api/admin'
+import { useNotifStore } from '../store/useNotifStore'
+import CardRaw from '../components/ui/CardRaw'
+import MetricRaw from '../components/ui/MetricRaw'
+import ButtonRaw from '../components/ui/ButtonRaw'
+import Spinner from '../components/ui/Spinner'
+
 const Admin = () => {
+  const addToast = useNotifStore(state => state.addToast)
+  const [metrics, setMetrics] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [retraining, setRetraining] = useState(false)
+  const [retrainError, setRetrainError] = useState(null)
+
+  // Document title
+  useEffect(() => {
+    document.title = 'SKILL FORGE // ADMIN'
+  }, [])
+
+  useEffect(() => {
+    fetchMetrics()
+  }, [])
+
+  const fetchMetrics = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await getMetrics()
+      setMetrics(data)
+    } catch (err) {
+      setError(err.message || 'Failed to load metrics')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRetrain = async () => {
+    setRetraining(true)
+    setRetrainError(null)
+    try {
+      await triggerRetrain()
+      addToast({
+        message: 'RETRAIN STARTED',
+        type: 'info'
+      })
+    } catch (err) {
+      setRetrainError(err.message || 'Retrain failed')
+    } finally {
+      setRetraining(false)
+    }
+  }
+
+  const formatPercent = (value) => (value * 100).toFixed(1) + '%'
+
+  const getWinner = () => {
+    if (!metrics) return null
+    const dtF1 = metrics.decision_tree.f1_score
+    const nnF1 = metrics.neural_net.f1_score
+    return dtF1 >= nnF1 
+      ? { name: 'DECISION TREE', f1: formatPercent(dtF1) }
+      : { name: 'NEURAL NET', f1: formatPercent(nnF1) }
+  }
+
+  const winner = getWinner()
+
   return (
-    <div className="min-h-full bg-raw-white p-10">
-      <h1 className="font-raw text-[48px] leading-tight text-raw-black mb-8">
-        ADMIN
-      </h1>
-      <p className="font-body text-raw-black text-base leading-relaxed">
-        This page provides system administration controls for managing students and system configuration.
-        Design system: RawBlock (brutalist) with CardRaw, ButtonRaw, and MetricRaw for system metrics.
-        Sharp borders, no rounded corners, high-contrast black and white.
-      </p>
+    <div className="min-h-full bg-raw-white">
+      
+      {/* HEADER BAND */}
+      <div className="bg-raw-black px-8 py-10">
+        <h1 className="font-raw text-raw-white text-[48px] uppercase leading-tight">
+          ADMIN
+        </h1>
+        <p className="font-mono text-[#888] text-xs tracking-[2px] mt-2">
+          MODEL PERFORMANCE DASHBOARD
+        </p>
+      </div>
+
+      {/* MODEL METRICS SECTION */}
+      <div className="bg-raw-white px-8 py-10">
+        <div className="font-raw text-raw-black text-[10px] uppercase tracking-[3px] mb-8">
+          MODEL COMPARISON
+        </div>
+
+        {loading && (
+          <div className="flex items-center justify-center py-20">
+            <Spinner variant="raw" size="lg" />
+          </div>
+        )}
+
+        {error && !loading && (
+          <div className="border-[3px] border-raw-error p-4 font-raw text-raw-error text-[14px] uppercase tracking-[1px]">
+            FAILED — {error}
+          </div>
+        )}
+
+        {!loading && !error && metrics && (
+          <div>
+            {/* DECISION TREE MODEL */}
+            <CardRaw>
+              <h3 className="font-raw text-[24px] uppercase text-raw-black mb-6">
+                DECISION TREE
+              </h3>
+              <div className="flex gap-4">
+                <MetricRaw 
+                  label="ACCURACY" 
+                  value={formatPercent(metrics.decision_tree.accuracy)} 
+                />
+                <MetricRaw 
+                  label="PRECISION" 
+                  value={formatPercent(metrics.decision_tree.precision)} 
+                />
+                <MetricRaw 
+                  label="RECALL" 
+                  value={formatPercent(metrics.decision_tree.recall)} 
+                />
+                <MetricRaw 
+                  label="F1" 
+                  value={formatPercent(metrics.decision_tree.f1_score)} 
+                />
+              </div>
+            </CardRaw>
+
+            {/* DIVIDER */}
+            <div className="border-b-[5px] border-raw-black my-6" />
+
+            {/* NEURAL NET MODEL */}
+            <CardRaw>
+              <h3 className="font-raw text-[24px] uppercase text-raw-black mb-6">
+                NEURAL NET
+              </h3>
+              <div className="flex gap-4">
+                <MetricRaw 
+                  label="ACCURACY" 
+                  value={formatPercent(metrics.neural_net.accuracy)} 
+                />
+                <MetricRaw 
+                  label="PRECISION" 
+                  value={formatPercent(metrics.neural_net.precision)} 
+                />
+                <MetricRaw 
+                  label="RECALL" 
+                  value={formatPercent(metrics.neural_net.recall)} 
+                />
+                <MetricRaw 
+                  label="F1" 
+                  value={formatPercent(metrics.neural_net.f1_score)} 
+                />
+              </div>
+            </CardRaw>
+
+            {/* WINNER LINE */}
+            {winner && (
+              <div className="mt-6 font-raw text-[16px] uppercase tracking-[2px] text-raw-black">
+                WINNER: {winner.name} // F1: {winner.f1}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* SYSTEM ACTIONS SECTION */}
+      <div className="bg-raw-black px-8 py-10 border-t-[5px] border-raw-white">
+        <div className="font-raw text-raw-white text-[10px] uppercase tracking-[3px] mb-6">
+          SYSTEM ACTIONS
+        </div>
+
+        <ButtonRaw 
+          size="lg" 
+          onClick={handleRetrain}
+          disabled={retraining}
+        >
+          {retraining ? 'RETRAINING...' : 'RETRAIN MODELS'}
+        </ButtonRaw>
+
+        {retrainError && (
+          <div className="mt-4 font-mono text-raw-error text-sm">
+            {retrainError}
+          </div>
+        )}
+
+        <div className="mt-6">
+          <a
+            href="/api/admin/metrics"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono text-raw-link text-sm underline"
+          >
+            DOWNLOAD MODEL REPORT (CSV)
+          </a>
+        </div>
+      </div>
+
     </div>
   )
 }

@@ -1,7 +1,11 @@
+import { memo } from 'react'
 import { Radar, RadarChart as RechartsRadar, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts'
 import CardStar from '../ui/CardStar'
+import { getThemeColors } from '../../utils/themeColors'
 
-const RadarChart = ({ data, title = 'Cognitive Profile' }) => {
+const RadarChart = memo(({ data, title = 'Cognitive Profile' }) => {
+  const colors = getThemeColors()
+  
   const chartData = [
     { attribute: 'INT', value: data.INT },
     { attribute: 'WIS', value: data.WIS },
@@ -17,22 +21,24 @@ const RadarChart = ({ data, title = 'Cognitive Profile' }) => {
       </h3>
       <ResponsiveContainer width="100%" height={300}>
         <RechartsRadar data={chartData}>
-          <PolarGrid stroke="#3D3890" />
+          <PolarGrid stroke={colors.spaceOverlay} />
           <PolarAngleAxis
             dataKey="attribute"
-            tick={{ fill: '#A78BFA', fontFamily: 'DM Sans', fontSize: 12 }}
+            tick={{ fill: colors.spaceNebula, fontFamily: 'DM Sans', fontSize: 12 }}
           />
           <Radar
             dataKey="value"
-            fill="#A78BFA"
+            fill={colors.spaceNebula}
             fillOpacity={0.15}
-            stroke="#A78BFA"
+            stroke={colors.spaceNebula}
             strokeWidth={2}
           />
         </RechartsRadar>
       </ResponsiveContainer>
     </CardStar>
   )
-}
+})
+
+RadarChart.displayName = 'RadarChart'
 
 export default RadarChart
