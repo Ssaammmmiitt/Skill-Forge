@@ -1,5 +1,4 @@
 import React from 'react'
-import { useNavigate } from 'react-router-dom'
 import ButtonStar from './ui/ButtonStar'
 
 class ErrorBoundary extends React.Component {
@@ -26,8 +25,6 @@ class ErrorBoundary extends React.Component {
 }
 
 const ErrorFallback = ({ error }) => {
-  const navigate = useNavigate()
-
   return (
     <div className="min-h-screen bg-raw-black flex flex-col">
       {/* RawBlock Section */}

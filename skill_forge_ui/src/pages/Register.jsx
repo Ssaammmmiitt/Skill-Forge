@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/useAuthStore'
-import { register, googleLogin } from '../api/auth'
-import ButtonRaw from '../components/ui/ButtonRaw'
+import { register } from '../api/auth'
+import { useGoogleSignIn } from '../hooks/useGoogleSignIn'
+import ButtonOffset from '../components/ui/ButtonOffset'
+import PasswordInput from '../components/ui/PasswordInput'
+import UsernamePicker from '../components/auth/UsernamePicker'
+import PublicHeader from '../components/layout/PublicHeader'
 
 const Register = () => {
   const [name, setName] = useState('')
+  const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -13,6 +18,10 @@ const Register = () => {
   const [error, setError] = useState(null)
   const navigate = useNavigate()
   const { setAuth, isAuthenticated } = useAuthStore()
+  const { renderGoogleButton, loading: googleLoading, error: googleError, isConfigured: isGoogleConfigured, isSdkLoaded } = useGoogleSignIn()
+
+  // Extract first name for username suggestions
+  const firstName = name.split(' ')[0] || ''
 
   // Document title
   useEffect(() => {
@@ -26,11 +35,18 @@ const Register = () => {
     }
   }, [isAuthenticated, navigate])
 
+  // Render Google Button when SDK is ready
+  useEffect(() => {
+    if (isSdkLoaded && isGoogleConfigured) {
+      renderGoogleButton('google-register-button', 'signup')
+    }
+  }, [isSdkLoaded, isGoogleConfigured])
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     
     // Validation
-    if (!name.trim() || !email.trim() || !password || !confirmPassword) {
+    if (!name.trim() || !username.trim() || !email.trim() || !password || !confirmPassword) {
       setError('All fields are required')
       return
     }
@@ -48,7 +64,7 @@ const Register = () => {
     setLoading(true)
     setError(null)
     try {
-      const response = await register({ name, email, password })
+      const response = await register({ name, username, email, password })
       const { token, user } = response
       setAuth(token, user)
       navigate('/dashboard')
@@ -59,15 +75,26 @@ const Register = () => {
     }
   }
 
-  const handleGoogleRegister = () => {
-    setError('Google OAuth setup required: Add your Google Client ID to the backend')
-    // In production, you'd load the Google Sign-In SDK here
+  const handleGoogleRegisterFallback = () => {
+    if (!isGoogleConfigured) {
+      setError('Google Sign-In not configured. Add VITE_GOOGLE_CLIENT_ID to your .env file.')
+      return
+    }
+    
+    setError('Google Sign-In SDK is blocked by your browser extensions (e.g. adblocker) or network. Please disable them or allow accounts.google.com to sign up with Google, or use the email form above.')
+  }
+
+  const handleUsernameSelect = (selectedUsername) => {
+    setUsername(selectedUsername)
+    setError(null)
   }
 
   return (
-    <div className="min-h-screen bg-raw-black flex">
+    <div className="min-h-screen bg-raw-bg flex flex-col">
+      <PublicHeader showAuthLinks={false} />
+      <div className="flex flex-1 flex-col lg:flex-row">
       {/* Left Side - Hero Section */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-center px-16 border-r-[5px] border-raw-white">
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-center px-16 border-r-[5px] border-raw-border">
         <div className="max-w-xl">
           <h1 className="font-raw text-raw-white uppercase tracking-[4px] text-[64px] leading-none mb-8">
             START<br/>LEARNING
@@ -116,13 +143,13 @@ const Register = () => {
             CREATE ACCOUNT
           </h2>
 
-          {error && (
+          {(error || googleError) && (
             <div className="mb-6 border-[3px] border-raw-error p-4" style={{ borderRadius: '0px' }}>
               <div className="font-raw text-raw-white text-[14px] uppercase">
                 // ERROR //
               </div>
               <p className="font-mono text-[#FF6B6B] text-[12px] mt-2">
-                {error}
+                {error || googleError}
               </p>
             </div>
           )}
@@ -160,18 +187,25 @@ const Register = () => {
               />
             </div>
 
+            {/* Username Picker */}
+            {firstName && (
+              <UsernamePicker
+                firstName={firstName}
+                selectedUsername={username}
+                onSelect={handleUsernameSelect}
+                error={null}
+              />
+            )}
+
             <div>
               <label className="font-raw text-[11px] uppercase tracking-[1px] text-raw-white block mb-2">
                 Password
               </label>
-              <input
-                type="password"
+              <PasswordInput
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Min. 6 characters"
-                className="w-full bg-raw-surface border-[3px] border-raw-border font-mono text-[15px] px-3 py-2.5 text-raw-white
-                         focus:outline-none focus:border-[5px] placeholder:text-raw-text-tertiary"
-                style={{ borderRadius: '0px' }}
+                autoComplete="new-password"
                 required
               />
             </div>
@@ -180,25 +214,22 @@ const Register = () => {
               <label className="font-raw text-[11px] uppercase tracking-[1px] text-raw-white block mb-2">
                 Confirm Password
               </label>
-              <input
-                type="password"
+              <PasswordInput
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full bg-raw-surface border-[3px] border-raw-border font-mono text-[15px] px-3 py-2.5 text-raw-white
-                         focus:outline-none focus:border-[5px] placeholder:text-raw-text-tertiary"
-                style={{ borderRadius: '0px' }}
+                autoComplete="new-password"
                 required
               />
             </div>
 
-            <ButtonRaw 
-              size="lg" 
+            <ButtonOffset
+              size="lg"
               type="submit"
+              className="w-full mt-2"
               disabled={loading}
             >
               {loading ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}
-            </ButtonRaw>
+            </ButtonOffset>
           </form>
 
           <div className="mt-6">
@@ -208,23 +239,37 @@ const Register = () => {
               <div className="flex-1 border-b border-[#333]" />
             </div>
 
-            <button
-              onClick={handleGoogleRegister}
-              className="w-full bg-raw-surface border-[3px] border-raw-border py-3 px-4
-                       hover:bg-raw-hover transition-colors duration-150
-                       flex items-center justify-center gap-3"
-              style={{ borderRadius: '0px' }}
-            >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M19.6 10.227c0-.709-.064-1.39-.182-2.045H10v3.868h5.382a4.6 4.6 0 01-1.996 3.018v2.51h3.232c1.891-1.742 2.982-4.305 2.982-7.35z" fill="#4285F4"/>
-                <path d="M10 20c2.7 0 4.964-.895 6.618-2.423l-3.232-2.509c-.895.6-2.04.955-3.386.955-2.605 0-4.81-1.76-5.595-4.123H1.064v2.59A9.996 9.996 0 0010 20z" fill="#34A853"/>
-                <path d="M4.405 11.9c-.2-.6-.314-1.24-.314-1.9 0-.66.114-1.3.314-1.9V5.51H1.064A9.996 9.996 0 000 10c0 1.614.386 3.14 1.064 4.49L4.405 11.9z" fill="#FBBC05"/>
-                <path d="M10 3.977c1.468 0 2.786.505 3.823 1.496l2.868-2.868C14.959.99 12.696 0 10 0 6.09 0 2.71 2.24 1.064 5.51l3.34 2.59C5.19 5.736 7.395 3.977 10 3.977z" fill="#EA4335"/>
-              </svg>
-              <span className="font-mono text-raw-white text-sm">
-                Sign up with Google
-              </span>
-            </button>
+            {isSdkLoaded && isGoogleConfigured ? (
+              <div className="w-full flex justify-center">
+                <div id="google-register-button" className="w-full flex justify-center"></div>
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={handleGoogleRegisterFallback}
+                  disabled={googleLoading}
+                  className="w-full bg-raw-surface border-[3px] border-raw-border py-3 px-4
+                           hover:bg-raw-hover transition-colors duration-150
+                           flex items-center justify-center gap-3 disabled:opacity-50"
+                  style={{ borderRadius: '0px' }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M19.6 10.227c0-.709-.064-1.39-.182-2.045H10v3.868h5.382a4.6 4.6 0 01-1.996 3.018v2.51h3.232c1.891-1.742 2.982-4.305 2.982-7.35z" fill="#4285F4"/>
+                    <path d="M10 20c2.7 0 4.964-.895 6.618-2.423l-3.232-2.509c-.895.6-2.04.955-3.386.955-2.605 0-4.81-1.76-5.595-4.123H1.064v2.59A9.996 9.996 0 0010 20z" fill="#34A853"/>
+                    <path d="M4.405 11.9c-.2-.6-.314-1.24-.314-1.9 0-.66.114-1.3.314-1.9V5.51H1.064A9.996 9.996 0 000 10c0 1.614.386 3.14 1.064 4.49L4.405 11.9z" fill="#FBBC05"/>
+                    <path d="M10 3.977c1.468 0 2.786.505 3.823 1.496l2.868-2.868C14.959.99 12.696 0 10 0 6.09 0 2.71 2.24 1.064 5.51l3.34 2.59C5.19 5.736 7.395 3.977 10 3.977z" fill="#EA4335"/>
+                  </svg>
+                  <span className="font-mono text-raw-white text-sm">
+                    {googleLoading ? 'Signing up...' : 'Sign up with Google'}
+                  </span>
+                </button>
+                {!isGoogleConfigured && (
+                  <p className="text-center font-mono text-[#999] text-[11px] mt-2">
+                    Google Sign-In: Add VITE_GOOGLE_CLIENT_ID to .env
+                  </p>
+                )}
+              </>
+            )}
           </div>
 
           <div className="mt-8 text-center">
@@ -233,6 +278,7 @@ const Register = () => {
             </Link>
           </div>
         </div>
+      </div>
       </div>
     </div>
   )

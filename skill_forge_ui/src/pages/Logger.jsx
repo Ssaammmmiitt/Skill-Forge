@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import ButtonRaw from '../components/ui/ButtonRaw'
+import ButtonOffset from '../components/ui/ButtonOffset'
 import { useNotifStore } from '../store/useNotifStore'
 import { useStudentStore } from '../store/useStudentStore'
 import { useAuthStore } from '../store/useAuthStore'
@@ -7,8 +7,18 @@ import { logActivity } from '../api/student'
 
 const Logger = () => {
   const addToast = useNotifStore(state => state.addToast)
-  const updateAttributes = useStudentStore(state => state.updateAttributes)
+  const applyActivityResult = useStudentStore(state => state.applyActivityResult)
+  const refreshStudent = useStudentStore(state => state.refreshStudent)
   const user = useAuthStore(state => state.user)
+
+  const syncAfterActivity = async (result) => {
+    if (result?.updated_attributes) {
+      applyActivityResult(result.updated_attributes)
+    }
+    if (user?.student_id) {
+      await refreshStudent(user.student_id)
+    }
+  }
 
   // Document title
   useEffect(() => {
@@ -50,10 +60,8 @@ const Logger = () => {
         value: duration
       })
       
-      const delta = result.delta || {}
-      updateAttributes(delta)
-      
-      const intGain = delta.INT || 0
+      await syncAfterActivity(result)
+      const intGain = result.delta?.INT || 0
       addToast({
         message: `+${intGain} INT`,
         type: 'info'
@@ -85,10 +93,8 @@ const Logger = () => {
         value: hours
       })
       
-      const delta = result.delta || {}
-      updateAttributes(delta)
-      
-      const energyGain = delta.energy || 0
+      await syncAfterActivity(result)
+      const energyGain = result.delta?.energy || 0
       addToast({
         message: `+${energyGain} ENERGY`,
         type: 'info'
@@ -114,10 +120,8 @@ const Logger = () => {
         value: checkedCount
       })
       
-      const delta = result.delta || {}
-      updateAttributes(delta)
-      
-      const wisGain = delta.WIS || 0
+      await syncAfterActivity(result)
+      const wisGain = result.delta?.WIS || 0
       addToast({
         message: `+${wisGain} WIS`,
         type: 'info'
@@ -210,13 +214,14 @@ const Logger = () => {
                 </div>
               )}
 
-              <ButtonRaw 
-                size="md" 
+              <ButtonOffset
+                size="md"
+                className="mt-2"
                 onClick={handleStudySubmit}
                 disabled={studyLoading}
               >
                 {studyLoading ? 'LOGGING...' : 'LOG STUDY SESSION'}
-              </ButtonRaw>
+              </ButtonOffset>
               {studyErrorMsg && (
                 <div className="font-raw text-raw-error text-[12px] uppercase tracking-[1px] border-[2px] border-raw-error p-3">
                   {studyErrorMsg}
@@ -268,13 +273,14 @@ const Logger = () => {
                 </div>
               )}
 
-              <ButtonRaw 
-                size="md" 
+              <ButtonOffset
+                size="md"
+                className="mt-2"
                 onClick={handleSleepSubmit}
                 disabled={sleepLoading}
               >
                 {sleepLoading ? 'LOGGING...' : 'LOG SLEEP'}
-              </ButtonRaw>
+              </ButtonOffset>
               {sleepErrorMsg && (
                 <div className="font-raw text-raw-error text-[12px] uppercase tracking-[1px] border-[2px] border-raw-error p-3">
                   {sleepErrorMsg}
@@ -326,9 +332,9 @@ const Logger = () => {
               </div>
             )}
 
-            <ButtonRaw size="md" onClick={handleTasksSubmit}>
+            <ButtonOffset size="md" className="mt-2" onClick={handleTasksSubmit}>
               LOG TASKS
-            </ButtonRaw>
+            </ButtonOffset>
           </div>
         </div>
       </div>

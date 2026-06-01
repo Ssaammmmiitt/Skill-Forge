@@ -3,7 +3,7 @@ import { getMetrics, triggerRetrain } from '../api/admin'
 import { useNotifStore } from '../store/useNotifStore'
 import CardRaw from '../components/ui/CardRaw'
 import MetricRaw from '../components/ui/MetricRaw'
-import ButtonRaw from '../components/ui/ButtonRaw'
+import ButtonOffset from '../components/ui/ButtonOffset'
 import Spinner from '../components/ui/Spinner'
 
 const Admin = () => {
@@ -167,13 +167,14 @@ const Admin = () => {
           SYSTEM ACTIONS
         </div>
 
-        <ButtonRaw 
-          size="lg" 
+        <ButtonOffset
+          size="lg"
+          className="mt-1"
           onClick={handleRetrain}
           disabled={retraining}
         >
           {retraining ? 'RETRAINING...' : 'RETRAIN MODELS'}
-        </ButtonRaw>
+        </ButtonOffset>
 
         {retrainError && (
           <div className="mt-4 font-mono text-raw-error text-sm">

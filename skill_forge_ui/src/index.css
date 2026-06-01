@@ -4,6 +4,8 @@
    THEME SYSTEM — Dark & Light Mode for Fusion Design
    ═══════════════════════════════════════════════════════════════════ */
 
+/* Default (dark) — used before JS sets data-theme */
+:root,
 :root[data-theme="dark"] {
   /* RawBlock System - Dark Mode */
   --raw-bg: #0A0A0A;
@@ -39,6 +41,20 @@
   --arcade-secondary: #A0A0A0;
   --arcade-danger: #FF1744;
   --arcade-hover: #1F1F1F;
+
+  /* Offset button (dark mode: dark face, light shadow/text) */
+  --btn-offset-shadow: #FFFFFF;
+  --btn-offset-face: #151515;
+  --btn-offset-text: #FFFFFF;
+  --btn-offset-border: #FFFFFF;
+  --btn-offset-face-hover: #FFFFFF;
+  --btn-offset-text-hover: #0A0A0A;
+
+  /* Homepage difficulty blocks — dark mode: filled = white, empty = dark */
+  --difficulty-filled-bg: #FFFFFF;
+  --difficulty-filled-border: #FFFFFF;
+  --difficulty-empty-bg: #151515;
+  --difficulty-empty-border: #707070;
 }
 
 :root[data-theme="light"] {
@@ -76,6 +92,20 @@
   --arcade-secondary: #6B7280;
   --arcade-danger: #DC2626;
   --arcade-hover: #FFF9E6;
+
+  /* Offset button (light mode: white face, black shadow/text) */
+  --btn-offset-shadow: #0A0A0A;
+  --btn-offset-face: #FFFFFF;
+  --btn-offset-text: #0A0A0A;
+  --btn-offset-border: #0A0A0A;
+  --btn-offset-face-hover: #0A0A0A;
+  --btn-offset-text-hover: #FFFFFF;
+
+  /* Homepage difficulty blocks — light mode: filled = black, empty = white */
+  --difficulty-filled-bg: #0A0A0A;
+  --difficulty-filled-border: #0A0A0A;
+  --difficulty-empty-bg: #FFFFFF;
+  --difficulty-empty-border: #0A0A0A;
 }
 
 @keyframes slide-in {
@@ -91,4 +121,9 @@
 
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
+}
+
+body {
+  background-color: var(--raw-bg);
+  color: var(--raw-text);
 }

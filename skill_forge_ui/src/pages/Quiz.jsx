@@ -11,12 +11,20 @@ import BadgeArcade from '../components/ui/BadgeArcade'
 import ProgressRaw from '../components/ui/ProgressRaw'
 import Spinner from '../components/ui/Spinner'
 import Modal from '../components/ui/Modal'
+import ThemeToggle from '../components/ui/ThemeToggle'
+
+const QuizThemeFab = () => (
+  <div className="fixed top-6 right-6 z-50">
+    <ThemeToggle />
+  </div>
+)
 
 const Quiz = () => {
   const navigate = useNavigate()
   const user = useAuthStore(state => state.user)
   const student = useStudentStore(state => state.student)
   const setStudent = useStudentStore(state => state.setStudent)
+  const refreshStudent = useStudentStore(state => state.refreshStudent)
   const { addToast, setLevelUp, levelUpPending, levelUpData, clearLevelUp } = useNotifStore()
 
   const [phase, setPhase] = useState('start')
@@ -119,12 +127,14 @@ const Quiz = () => {
       setXpEarned(prev => prev + questionXP)
       setScore(prev => prev + (isCorrect ? 20 : 0))
       setEvents(newEvents)
-      setAnswers(prev => [...prev, { 
-        question_index: currentIndex,
-        selected_index: index,
-        is_correct: isCorrect,
-        is_timeout: isTimeout,
-        xp: questionXP 
+      setAnswers(prev => [...prev, {
+        question_id: currentQuestion.id,
+        chosen_index: index,
+        correct_index: currentQuestion.correct_index,
+        topic: currentQuestion.topic,
+        _ui_xp: questionXP,
+        _ui_correct: isCorrect,
+        _ui_timeout: isTimeout,
       }])
 
       addToast({
@@ -153,11 +163,20 @@ const Quiz = () => {
     setSubmitting(true)
     setSubmitError(null)
     try {
+      const apiAnswers = answers.map(
+        ({ question_id, chosen_index, correct_index, topic }) => ({
+          question_id,
+          chosen_index,
+          correct_index,
+          topic,
+        })
+      )
+
       const result = await submitQuiz({
         student_id: user?.student_id,
-        answers: answers,
+        answers: apiAnswers,
         difficulty: 5,
-        time_taken: answers.length * 30
+        time_taken: answers.length * 30,
       })
       
       // Check for level up
@@ -173,8 +192,10 @@ const Quiz = () => {
       
       if (result.student) {
         setStudent(result.student)
+      } else if (user?.student_id) {
+        await refreshStudent(user.student_id)
       }
-      
+
       if (result.xp_earned !== undefined) {
         setXpEarned(result.xp_earned)
       }
@@ -223,6 +244,7 @@ const Quiz = () => {
   if (phase === 'start') {
     return (
       <div className="min-h-screen bg-arcade-surface flex items-center justify-center px-6 py-12">
+        <QuizThemeFab />
         <button
           onClick={() => navigate('/')}
           className="fixed top-6 left-6 font-arcade text-[8px] text-arcade-secondary hover:text-arcade-primary tracking-[2px]"
@@ -294,6 +316,7 @@ const Quiz = () => {
 
     return (
       <div className="min-h-screen bg-arcade-surface px-8 py-6">
+        <QuizThemeFab />
         <button
           onClick={() => navigate('/')}
           className="fixed top-6 left-6 font-arcade text-[8px] text-arcade-secondary hover:text-arcade-primary tracking-[2px]"
@@ -360,8 +383,8 @@ const Quiz = () => {
 
   if (phase === 'feedback') {
     const lastAnswer = answers[answers.length - 1]
-    const isCorrect = lastAnswer.is_correct
-    const isTimeout = lastAnswer.is_timeout
+    const isCorrect = lastAnswer._ui_correct
+    const isTimeout = lastAnswer._ui_timeout
 
     return (
       <div className="min-h-screen bg-arcade-surface flex items-center justify-center px-8 py-8">
@@ -398,7 +421,7 @@ const Quiz = () => {
           </div>
 
           <div className="font-arcade text-[22px] text-space-star tracking-[4px] mt-6">
-            +{String(lastAnswer.xp).padStart(3, '0')} XP
+            +{String(lastAnswer._ui_xp ?? 0).padStart(3, '0')} XP
           </div>
 
           {events.length > 0 && (
@@ -493,7 +516,7 @@ const Quiz = () => {
               <ButtonArcade size="md" onClick={handleStart}>
                 RETRY
               </ButtonArcade>
-              <ButtonStar size="md" variant="primary" onClick={() => navigate('/analytics')}>
+              <ButtonStar size="md" variant="primary" onClick={() => navigate('/app/analytics')}>
                 VIEW STATS
               </ButtonStar>
             </div>
@@ -509,7 +532,7 @@ const Quiz = () => {
       open={levelUpPending}
       onClose={() => {
         clearLevelUp()
-        if (phase === 'complete') navigate('/analytics')
+        if (phase === 'complete') navigate('/app/analytics')
       }}
       system="arcade"
       title="LEVEL UP!"
@@ -527,7 +550,7 @@ const Quiz = () => {
         <div className="mt-6">
           <ButtonArcade size="md" onClick={() => {
             clearLevelUp()
-            if (phase === 'complete') navigate('/analytics')
+            if (phase === 'complete') navigate('/app/analytics')
           }}>
             CONTINUE
           </ButtonArcade>

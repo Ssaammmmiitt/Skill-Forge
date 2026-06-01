@@ -36,7 +36,7 @@ def get_db() -> sqlite3.Connection:
     os.makedirs(db_dir, exist_ok=True)
     db_path = os.path.join(db_dir, "skill_forge.db")
     
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(db_path, check_same_thread=False)
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
     conn.row_factory = sqlite3.Row

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuthStore } from '../store/useAuthStore'
 import { getLeaderboard } from '../api/analytics'
-import ButtonArcade from '../components/ui/ButtonArcade'
+import ButtonOffset from '../components/ui/ButtonOffset'
 import BadgeStar from '../components/ui/BadgeStar'
 import BadgeArcade from '../components/ui/BadgeArcade'
 import Spinner from '../components/ui/Spinner'
@@ -76,28 +76,28 @@ const Leaderboard = () => {
         </p>
 
         {/* SORT BUTTONS */}
-        <div className="flex gap-4 mb-8">
-          <ButtonArcade 
-            size="sm" 
-            onClick={() => handleSort('xp')}
+        <div className="flex flex-wrap gap-4 mb-8">
+          <ButtonOffset
+            size="sm"
             active={sortBy === 'xp'}
+            onClick={() => handleSort('xp')}
           >
             SORT: XP
-          </ButtonArcade>
-          <ButtonArcade 
-            size="sm" 
-            onClick={() => handleSort('INT')}
+          </ButtonOffset>
+          <ButtonOffset
+            size="sm"
             active={sortBy === 'INT'}
+            onClick={() => handleSort('INT')}
           >
             SORT: INT
-          </ButtonArcade>
-          <ButtonArcade 
-            size="sm" 
-            onClick={() => handleSort('WIS')}
+          </ButtonOffset>
+          <ButtonOffset
+            size="sm"
             active={sortBy === 'WIS'}
+            onClick={() => handleSort('WIS')}
           >
             SORT: WIS
-          </ButtonArcade>
+          </ButtonOffset>
         </div>
 
         {/* LOADING STATE */}

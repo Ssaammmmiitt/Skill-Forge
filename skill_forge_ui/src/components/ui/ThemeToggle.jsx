@@ -1,42 +1,55 @@
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Moon, Sun } from 'lucide-react'
 import { useThemeStore } from '../../store/useThemeStore'
 
-const ThemeToggle = () => {
+const ThemeToggle = ({ className = '' }) => {
   const { theme, toggleTheme } = useThemeStore()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <div
+        className={`h-9 w-9 shrink-0 rounded-lg bg-raw-surface animate-pulse ${className}`}
+        aria-hidden
+      />
+    )
+  }
+
+  const isDark = theme === 'dark'
 
   return (
     <button
+      type="button"
       onClick={toggleTheme}
-      className="w-full border-[3px] border-raw-border bg-raw-bg py-3 px-4 
-                 flex items-center justify-between
-                 hover:bg-raw-hover transition-colors duration-150"
-      style={{ borderRadius: '0px' }}
-      aria-label="Toggle theme"
+      className={`
+        p-2 rounded-lg transition-all text-raw-text
+        ${isDark ? 'bg-raw-surface hover:bg-raw-hover' : 'bg-raw-hover hover:bg-raw-surface'}
+        ${className}
+      `}
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={isDark ? 'Light mode' : 'Dark mode'}
     >
-      <div className="flex items-center gap-3">
-        <div className="font-mono text-[10px] text-raw-text-secondary uppercase tracking-[1px]">
-          THEME
-        </div>
-      </div>
-      
-      <div className="flex items-center gap-2">
-        {/* Toggle Switch */}
-        <div
-          className="w-10 h-5 border-[2px] border-raw-border relative flex items-center bg-raw-surface"
-          style={{ borderRadius: '0px' }}
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={theme}
+          initial={{ opacity: 0, rotate: -30 }}
+          animate={{ opacity: 1, rotate: 0 }}
+          exit={{ opacity: 0, rotate: 30 }}
+          transition={{ duration: 0.2 }}
+          className="flex items-center justify-center"
         >
-          <div
-            className={`w-4 h-4 bg-raw-border transition-transform duration-200 ${
-              theme === 'dark' ? 'translate-x-0' : 'translate-x-5'
-            }`}
-            style={{ borderRadius: '0px' }}
-          />
-        </div>
-        
-        {/* Label */}
-        <span className="font-raw text-[9px] text-raw-text uppercase tracking-[1px] min-w-[40px]">
-          {theme === 'dark' ? 'DARK' : 'LIGHT'}
-        </span>
-      </div>
+          {isDark ? (
+            <Sun size={20} strokeWidth={2} aria-hidden />
+          ) : (
+            <Moon size={20} strokeWidth={2} aria-hidden />
+          )}
+        </motion.div>
+      </AnimatePresence>
     </button>
   )
 }

@@ -4,7 +4,7 @@ import { useStudent } from '../hooks/useStudent'
 import { useAnalytics } from '../hooks/useAnalytics'
 import MetricStar from '../components/ui/MetricStar'
 import MetricArcade from '../components/ui/MetricArcade'
-import ButtonRaw from '../components/ui/ButtonRaw'
+import ButtonOffset from '../components/ui/ButtonOffset'
 import BadgeStar from '../components/ui/BadgeStar'
 import ProgressStar from '../components/ui/ProgressStar'
 import Spinner from '../components/ui/Spinner'
@@ -18,12 +18,6 @@ const Dashboard = () => {
   useEffect(() => {
     document.title = 'SKILL FORGE // DASHBOARD'
   }, [])
-
-  const xpPerLevel = 500
-  const currentLevelXP = student.xp % xpPerLevel
-  const xpProgress = (currentLevelXP / xpPerLevel) * 100
-  const nextLevel = student.level + 1
-  const xpToNextLevel = nextLevel * xpPerLevel
 
   const scoreTrend = analytics?.score_trend || []
   const sessions = scoreTrend.map((score, idx) => ({
@@ -52,13 +46,19 @@ const Dashboard = () => {
     return 'completed'
   }
 
-  if (!student) {
+  if (studentLoading || !student) {
     return (
       <div className="min-h-full bg-space-deep flex items-center justify-center">
         <Spinner variant="star" size="lg" />
       </div>
     )
   }
+
+  const xpPerLevel = 500
+  const currentLevelXP = student.xp % xpPerLevel
+  const xpProgress = (currentLevelXP / xpPerLevel) * 100
+  const nextLevel = student.level + 1
+  const xpToNextLevel = nextLevel * xpPerLevel
 
   return (
     <div className="min-h-full">
@@ -118,16 +118,16 @@ const Dashboard = () => {
         <div className="font-raw text-raw-black text-[10px] uppercase tracking-[3px] mb-6">
           ACTIONS
         </div>
-        <div className="flex gap-4">
-          <ButtonRaw size="md" onClick={() => navigate('/quiz')}>
+        <div className="flex flex-wrap gap-5 mt-2">
+          <ButtonOffset size="md" className="m-0" onClick={() => navigate('/quiz')}>
             START QUIZ
-          </ButtonRaw>
-          <ButtonRaw size="md" onClick={() => navigate('/log')}>
+          </ButtonOffset>
+          <ButtonOffset size="md" className="m-0" onClick={() => navigate('/app/log')}>
             LOG ACTIVITY
-          </ButtonRaw>
-          <ButtonRaw size="md" onClick={() => navigate('/path')}>
+          </ButtonOffset>
+          <ButtonOffset size="md" className="m-0" onClick={() => navigate('/app/path')}>
             VIEW PATH
-          </ButtonRaw>
+          </ButtonOffset>
         </div>
       </section>
 

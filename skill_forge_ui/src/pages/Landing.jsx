@@ -1,10 +1,15 @@
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/useAuthStore'
+import PublicHeader from '../components/layout/PublicHeader'
+import ButtonOffset from '../components/ui/ButtonOffset'
 
 const Landing = () => {
   const navigate = useNavigate()
   const { isAuthenticated } = useAuthStore()
+  const [difficultyLevel, setDifficultyLevel] = useState(7)
+  const [learningStyle, setLearningStyle] = useState('fast_learner')
+  const [performance, setPerformance] = useState(85)
 
   useEffect(() => {
     document.title = 'SKILL FORGE // Adaptive Learning Platform'
@@ -16,6 +21,20 @@ const Landing = () => {
       navigate('/dashboard')
     }
   }, [isAuthenticated, navigate])
+
+  const learningStyles = [
+    { id: 'fast_learner', label: 'FAST LEARNER', color: 'raw-success' },
+    { id: 'slow_learner', label: 'METHODICAL', color: 'raw-warning' },
+    { id: 'conceptual', label: 'CONCEPTUAL', color: 'space-nebula' },
+    { id: 'memorization', label: 'MEMORIZER', color: 'arcade-primary' }
+  ]
+
+  const handleDifficultyClick = (level) => {
+    setDifficultyLevel(level + 1)
+    // Simulate performance change based on difficulty
+    const newPerformance = Math.max(50, Math.min(95, 85 - (level * 3)))
+    setPerformance(newPerformance)
+  }
 
   const features = [
     {
@@ -52,6 +71,7 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-raw-bg">
+      <PublicHeader />
       {/* Hero Section */}
       <div className="relative border-b-[5px] border-raw-border">
         <div className="max-w-7xl mx-auto px-6 py-20 lg:py-32">
@@ -72,65 +92,89 @@ const Landing = () => {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link
-                  to="/register"
-                  className="border-[5px] border-raw-border bg-raw-border text-raw-bg 
-                           font-raw text-[16px] uppercase tracking-[2px] px-8 py-4
-                           hover:bg-raw-hover hover:text-raw-text transition-colors duration-150
-                           text-center"
-                  style={{ borderRadius: '0px' }}
-                >
-                  START LEARNING
-                </Link>
-                <Link
-                  to="/login"
-                  className="border-[5px] border-raw-border bg-raw-bg text-raw-text 
-                           font-raw text-[16px] uppercase tracking-[2px] px-8 py-4
-                           hover:bg-raw-hover transition-colors duration-150
-                           text-center"
-                  style={{ borderRadius: '0px' }}
-                >
-                  SIGN IN
-                </Link>
+                <ButtonOffset size="lg" onClick={() => navigate('/register')}>
+                  Start learning
+                </ButtonOffset>
+                <ButtonOffset size="lg" onClick={() => navigate('/login')}>
+                  Sign in
+                </ButtonOffset>
               </div>
             </div>
 
-            {/* Right: Hero Visual */}
+            {/* Right: Interactive Hero Visual */}
             <div className="hidden lg:block">
               <div className="border-[5px] border-raw-border p-8 bg-raw-surface">
                 <div className="space-y-6">
+                  {/* Performance Indicator */}
                   <div className="border-l-[5px] border-raw-border pl-4">
                     <div className="font-mono text-raw-text-tertiary text-[12px] mb-2">
-                      SESSION_001
+                      CURRENT PERFORMANCE
                     </div>
-                    <div className="font-mono text-raw-text text-[16px]">
-                      Performance: <span className="text-raw-success">+15%</span>
+                    <div className="font-mono text-raw-text text-[24px]">
+                      {performance}%
+                    </div>
+                    <div className="w-full bg-raw-bg border-[2px] border-raw-border h-2 mt-2" style={{ borderRadius: '0px' }}>
+                      <div 
+                        className="bg-raw-success h-full transition-all duration-300" 
+                        style={{ width: `${performance}%`, borderRadius: '0px' }}
+                      />
                     </div>
                   </div>
 
+                  {/* Interactive Difficulty Selector */}
                   <div className="border-l-[5px] border-raw-border pl-4">
                     <div className="font-mono text-raw-text-tertiary text-[12px] mb-2">
-                      DIFFICULTY
+                      DIFFICULTY LEVEL: {difficultyLevel}/10
                     </div>
                     <div className="flex gap-2">
-                      {[...Array(10)].map((_, i) => (
-                        <div
-                          key={i}
-                          className={`w-8 h-8 border-[2px] ${
-                            i < 7 ? 'bg-raw-border border-raw-border' : 'border-raw-border'
-                          }`}
-                          style={{ borderRadius: '0px' }}
-                        />
-                      ))}
+                      {[...Array(10)].map((_, i) => {
+                        const filled = i < difficultyLevel
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => handleDifficultyClick(i)}
+                            className={`w-8 h-8 border-[2px] transition-all duration-200 cursor-pointer
+                              ${filled
+                                ? 'bg-[var(--difficulty-filled-bg)] border-[var(--difficulty-filled-border)]'
+                                : 'bg-[var(--difficulty-empty-bg)] border-[var(--difficulty-empty-border)] hover:opacity-80'
+                              }`}
+                            style={{ borderRadius: '0px' }}
+                            aria-label={`Difficulty level ${i + 1}${filled ? ', active' : ''}`}
+                            aria-pressed={filled}
+                          />
+                        )
+                      })}
                     </div>
+                    <p className="font-mono text-raw-text-tertiary text-[10px] mt-2">
+                      Click to adjust difficulty
+                    </p>
                   </div>
 
+                  {/* Learning Style Selector */}
                   <div className="border-l-[5px] border-raw-border pl-4">
-                    <div className="font-mono text-raw-text-tertiary text-[12px] mb-2">
-                      LEARNING_STYLE
+                    <div className="font-mono text-raw-text-tertiary text-[12px] mb-3">
+                      LEARNING STYLE
                     </div>
-                    <div className="font-raw text-raw-text text-[20px] uppercase tracking-[2px]">
-                      FAST LEARNER
+                    <div className="space-y-2">
+                      {learningStyles.map((style) => (
+                        <button
+                          key={style.id}
+                          onClick={() => setLearningStyle(style.id)}
+                          className={`w-full text-left px-3 py-2 border-[2px] transition-all duration-200
+                            ${learningStyle === style.id 
+                              ? 'bg-raw-border border-raw-border' 
+                              : 'border-raw-border hover:bg-raw-hover'
+                            }`}
+                          style={{ borderRadius: '0px' }}
+                        >
+                          <span className={`font-raw text-[12px] uppercase tracking-[1px] ${
+                            learningStyle === style.id ? 'text-raw-bg' : 'text-raw-text'
+                          }`}>
+                            {style.label}
+                          </span>
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -261,15 +305,9 @@ const Landing = () => {
           <p className="font-mono text-raw-text-secondary text-[18px] mb-12 max-w-2xl mx-auto">
             Join the adaptive learning revolution. Create your free account and start your journey today.
           </p>
-          <Link
-            to="/register"
-            className="inline-block border-[5px] border-raw-border bg-raw-border text-raw-bg 
-                     font-raw text-[18px] uppercase tracking-[2px] px-12 py-5
-                     hover:bg-raw-hover hover:text-raw-text transition-colors duration-150"
-            style={{ borderRadius: '0px' }}
-          >
-            GET STARTED FREE
-          </Link>
+          <ButtonOffset size="lg" onClick={() => navigate('/register')}>
+            Get started free
+          </ButtonOffset>
         </div>
       </div>
 

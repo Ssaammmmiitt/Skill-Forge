@@ -21,12 +21,6 @@ const Profile = () => {
     memorization: 'locked'
   }
 
-  const xpPerLevel = 500
-  const currentLevelXP = student.xp % xpPerLevel
-  const xpProgress = (currentLevelXP / xpPerLevel) * 100
-  const nextLevel = student.level + 1
-  const xpToNextLevel = nextLevel * xpPerLevel
-
   const getInitials = (name) => {
     return name
       .split(' ')
@@ -62,6 +56,12 @@ const Profile = () => {
       </div>
     )
   }
+
+  const xpPerLevel = 500
+  const currentLevelXP = student.xp % xpPerLevel
+  const xpProgress = (currentLevelXP / xpPerLevel) * 100
+  const nextLevel = student.level + 1
+  const xpToNextLevel = nextLevel * xpPerLevel
 
   const mockSessions = student.recent_sessions || []
 

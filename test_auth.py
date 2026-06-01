@@ -1,6 +1,6 @@
 """
 Quick test script for authentication system.
-Run after starting the Flask backend on port 5000.
+Run after starting the FastAPI backend on port 5000.
 """
 import requests
 import json
@@ -119,7 +119,7 @@ def main():
     print("\n" + "#"*50)
     print("# SKILL FORGE AUTHENTICATION SYSTEM TEST")
     print("#"*50)
-    print("\nMake sure Flask backend is running on http://127.0.0.1:5000")
+    print("\nMake sure FastAPI backend is running on http://127.0.0.1:5000")
     print("Press Ctrl+C to cancel, or Enter to continue...")
     input()
     

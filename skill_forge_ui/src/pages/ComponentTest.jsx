@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import ButtonRaw from '../components/ui/ButtonRaw'
+import ButtonOffset from '../components/ui/ButtonOffset'
 import ButtonStar from '../components/ui/ButtonStar'
 import ButtonArcade from '../components/ui/ButtonArcade'
 import CardRaw from '../components/ui/CardRaw'
@@ -52,6 +53,14 @@ const ComponentTest = () => {
       <section>
         <h2 className="font-raw text-2xl text-raw-white mb-4">BUTTONS</h2>
         <div className="flex gap-4 flex-wrap items-center bg-[#333] p-6">
+          <div>
+            <p className="text-xs text-white mb-2">Offset (sm / md / lg)</p>
+            <div className="flex flex-wrap gap-4 items-center">
+              <ButtonOffset size="sm">SMALL</ButtonOffset>
+              <ButtonOffset size="md">MEDIUM</ButtonOffset>
+              <ButtonOffset size="lg">LARGE</ButtonOffset>
+            </div>
+          </div>
           <div>
             <p className="text-xs text-white mb-2">RawBlock</p>
             <ButtonRaw size="md">CLICK ME</ButtonRaw>

@@ -3,6 +3,7 @@ import { useStudentStore } from '../../store/useStudentStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import ProgressRaw from '../ui/ProgressRaw'
 import ThemeToggle from '../ui/ThemeToggle'
+import ButtonOffset from '../ui/ButtonOffset'
 import { calculateLevelProgress } from '../../utils/formatters'
 import { XP_PER_LEVEL } from '../../utils/constants'
 
@@ -11,8 +12,10 @@ const Sidebar = () => {
   const navigate = useNavigate()
   const student = useStudentStore(state => state.student)
   const logout = useAuthStore(state => state.logout)
+  const clearStudent = useStudentStore(state => state.clearStudent)
 
   const handleLogout = () => {
+    clearStudent()
     logout()
     navigate('/login')
   }
@@ -79,20 +82,14 @@ const Sidebar = () => {
         </div>
       </div>
 
-      <div className="px-6 pb-6">
+      <div className="px-6 pb-6 flex justify-center">
         <ThemeToggle />
       </div>
 
       <div className="px-6 pb-8">
-        <button
-          onClick={handleLogout}
-          className="w-full border-[3px] border-raw-border bg-raw-surface py-3 px-4 
-                   font-raw text-xs uppercase tracking-[2px] text-raw-white
-                   hover:bg-raw-hover transition-colors duration-150"
-          style={{ borderRadius: '0px' }}
-        >
+        <ButtonOffset size="md" className="w-full" onClick={handleLogout}>
           LOGOUT
-        </button>
+        </ButtonOffset>
       </div>
     </div>
   )

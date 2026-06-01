@@ -18,7 +18,16 @@ client.interceptors.request.use(config => {
 })
 
 client.interceptors.response.use(
-  response => response.data,
+  response => {
+    const body = response.data
+    if (body && typeof body === 'object' && 'data' in body && 'error' in body) {
+      if (body.error) {
+        return Promise.reject(new Error(body.error))
+      }
+      return body.data
+    }
+    return body
+  },
   error => {
     const message = error.response?.data?.error || 'Network error — please try again'
     return Promise.reject(new Error(message))

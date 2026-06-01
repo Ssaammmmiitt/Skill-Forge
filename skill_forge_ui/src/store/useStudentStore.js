@@ -1,16 +1,30 @@
 import { create } from 'zustand'
-import { mockStudent } from '../utils/mockData'
+import { getStudent } from '../api/student'
 
-export const useStudentStore = create((set) => ({
-  student: mockStudent,
+export const useStudentStore = create((set, get) => ({
+  student: null,
+
   setStudent: (student) => set({ student }),
-  updateAttributes: (delta) =>
-    set((state) => ({
+
+  clearStudent: () => set({ student: null }),
+
+  refreshStudent: async (studentId) => {
+    if (!studentId) return
+    const data = await getStudent(studentId)
+    set({ student: data })
+    return data
+  },
+
+  applyActivityResult: (updatedAttributes) => {
+    const current = get().student
+    if (!current || !updatedAttributes) return
+    set({
       student: {
-        ...state.student,
-        INT: Math.max(0, Math.min(100, state.student.INT + (delta.INT || 0))),
-        WIS: Math.max(0, Math.min(100, state.student.WIS + (delta.WIS || 0))),
-        energy: Math.max(0, Math.min(100, state.student.energy + (delta.energy || 0))),
-      }
-    }))
+        ...current,
+        INT: updatedAttributes.INT ?? current.INT,
+        WIS: updatedAttributes.WIS ?? current.WIS,
+        energy: updatedAttributes.energy ?? current.energy,
+      },
+    })
+  },
 }))
