@@ -1,42 +1,39 @@
 import { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { useStudent } from '../hooks/useStudent'
 import CardStar from '../components/ui/CardStar'
 import BadgeStar from '../components/ui/BadgeStar'
 import ProgressStar from '../components/ui/ProgressStar'
 import Spinner from '../components/ui/Spinner'
-import TutorialOverlay from '../components/learningPath/TutorialOverlay'
-import SkillRecommendations from '../components/learningPath/SkillRecommendations'
-import AchievementNotification, { useAchievements } from '../components/learningPath/AchievementNotification'
 
-// Skill tree data structure with improved spacing
+// Skill tree data structure - maps to cognitive skills
 const SKILL_TREE = {
   foundation: {
     id: 'foundation',
     name: 'Foundation',
     skills: [
-      { id: 'logic', name: 'Logical Reasoning', category: 'LOG', icon: '🧩', x: 40, y: 80, z: 0 },
-      { id: 'memory', name: 'Memory', category: 'MEM', icon: '🧠', x: 160, y: 80, z: -20 },
-      { id: 'attention', name: 'Attention', category: 'ATT', icon: '👁️', x: 280, y: 80, z: 0 },
+      { id: 'logic', name: 'Logical Reasoning', category: 'LOG', icon: '🧩', x: 50, y: 100 },
+      { id: 'memory', name: 'Memory', category: 'MEM', icon: '🧠', x: 150, y: 100 },
+      { id: 'attention', name: 'Attention', category: 'ATT', icon: '👁️', x: 250, y: 100 },
     ]
   },
   intermediate: {
     id: 'intermediate',
     name: 'Intermediate',
     skills: [
-      { id: 'comprehension', name: 'Comprehension', category: 'COM', icon: '📖', x: 90, y: 230, z: 10 },
-      { id: 'problem_solving', name: 'Problem Solving', category: 'LOG', icon: '🎯', x: 230, y: 230, z: -10 },
+      { id: 'comprehension', name: 'Comprehension', category: 'COM', icon: '📖', x: 100, y: 220 },
+      { id: 'problem_solving', name: 'Problem Solving', category: 'LOG', icon: '🎯', x: 200, y: 220 },
     ]
   },
   advanced: {
     id: 'advanced',
     name: 'Advanced',
     skills: [
-      { id: 'wisdom', name: 'Wisdom', category: 'WIS', icon: '🌟', x: 160, y: 370, z: 0 },
+      { id: 'wisdom', name: 'Wisdom', category: 'WIS', icon: '🌟', x: 150, y: 340 },
     ]
   }
 }
 
+// Connection paths between skills
 const CONNECTIONS = [
   { from: 'logic', to: 'problem_solving' },
   { from: 'memory', to: 'comprehension' },
@@ -46,27 +43,28 @@ const CONNECTIONS = [
   { from: 'problem_solving', to: 'wisdom' },
 ]
 
-const LearningPathEnhanced = () => {
+const LearningPath = () => {
   const { student, loading, error } = useStudent()
   const [selectedSkill, setSelectedSkill] = useState(null)
   const [hoveredSkill, setHoveredSkill] = useState(null)
-  const [view3D, setView3D] = useState(false)
-  const [rotation, setRotation] = useState({ x: 0, y: 0 })
-  const [unlockedSkills, setUnlockedSkills] = useState(new Set())
   const svgRef = useRef(null)
 
+  // Document title
   useEffect(() => {
     document.title = 'SKILL FORGE // LEARNING PATH'
   }, [])
 
+  // Get all skills in flat array
   const allSkills = Object.values(SKILL_TREE).flatMap(tier => tier.skills)
 
+  // Calculate skill mastery based on student data
   const getSkillMastery = (skillId) => {
     if (!student?.attributes) return 0
     
     const skill = allSkills.find(s => s.id === skillId)
     if (!skill) return 0
 
+    // Map skill categories to student attributes
     const categoryMap = {
       'LOG': 'logic',
       'MEM': 'memory',
@@ -79,6 +77,7 @@ const LearningPathEnhanced = () => {
     return student.attributes[attr] || 0
   }
 
+  // Get skill status based on mastery
   const getSkillStatus = (skillId) => {
     const mastery = getSkillMastery(skillId)
     if (mastery >= 80) return 'mastered'
@@ -87,132 +86,68 @@ const LearningPathEnhanced = () => {
     return 'locked'
   }
 
+  // Get skill color based on status
   const getSkillColor = (status) => {
     switch (status) {
-      case 'mastered': return '#FDE047'
-      case 'learning': return '#A78BFA'
-      case 'started': return '#60A5FA'
-      case 'locked': return '#4B4876'
+      case 'mastered': return '#FDE047' // star (yellow)
+      case 'learning': return '#A78BFA' // nebula (purple)
+      case 'started': return '#60A5FA' // info blue
+      case 'locked': return '#4B4876' // muted
       default: return '#4B4876'
     }
   }
 
-  // Achievement tracking
-  const { achievements, removeAchievement } = useAchievements(allSkills, getSkillMastery, getSkillStatus)
-
-  // Track newly unlocked skills for animations
-  useEffect(() => {
-    if (!student) return
-
-    const currentUnlocked = new Set()
-    allSkills.forEach(skill => {
-      const status = getSkillStatus(skill.id)
-      if (status !== 'locked') {
-        currentUnlocked.add(skill.id)
-      }
-    })
-
-    // Find newly unlocked skills
-    const newlyUnlocked = [...currentUnlocked].filter(id => !unlockedSkills.has(id))
-    if (newlyUnlocked.length > 0 && unlockedSkills.size > 0) {
-      // Trigger unlock animation
-      newlyUnlocked.forEach(id => {
-        console.log(`Skill unlocked: ${id}`)
-      })
-    }
-
-    setUnlockedSkills(currentUnlocked)
-  }, [student, allSkills])
-
+  // Handle skill click
   const handleSkillClick = (skill) => {
     setSelectedSkill(selectedSkill?.id === skill.id ? null : skill)
   }
 
-  // 3D rotation effect on mouse move
-  const handleMouseMove = (e) => {
-    if (!view3D || !svgRef.current) return
-    const rect = svgRef.current.getBoundingClientRect()
-    const x = (e.clientX - rect.left) / rect.width - 0.5
-    const y = (e.clientY - rect.top) / rect.height - 0.5
-    setRotation({ x: y * 20, y: x * 20 })
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-full bg-space-deep flex items-center justify-center">
-        <Spinner variant="star" size="lg" />
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-full bg-space-deep px-8">
-        <div className="p-6 border-2 border-space-error rounded-xl mt-10">
-          <div className="font-space text-space-error text-lg">ERROR</div>
-          <div className="font-body-space text-space-error text-sm mt-2">{error}</div>
-        </div>
-      </div>
-    )
-  }
-
-  if (!student) {
-    return (
-      <div className="min-h-full bg-space-deep flex items-center justify-center">
-        <p className="font-body-space text-space-nebula text-sm">No student data available</p>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-full bg-space-deep">
-      {/* Tutorial Overlay */}
-      <TutorialOverlay />
-
-      {/* Achievement Notifications */}
-      <AnimatePresence>
-        {achievements.map((achievement, index) => (
-          <AchievementNotification
-            key={index}
-            achievement={achievement}
-            onClose={() => removeAchievement(index)}
-          />
-        ))}
-      </AnimatePresence>
-
       {/* HEADER */}
       <div className="px-8 py-10">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div>
-            <h1 className="font-space text-[42px] leading-tight text-space-star mb-3">
-              LEARNING PATH
-            </h1>
-            <p className="font-body-space text-space-text text-base leading-relaxed max-w-3xl">
-              Your journey through the cognitive skill universe. Each constellation represents a mastery level.
-            </p>
-          </div>
-          
-          {/* 3D View Toggle */}
-          <button
-            onClick={() => setView3D(!view3D)}
-            className={`
-              px-6 py-3 rounded-pill font-body-space text-sm font-semibold transition-all duration-300
-              ${view3D 
-                ? 'bg-space-star text-space-deep shadow-lg' 
-                : 'bg-space-surface border-2 border-space-nebula text-space-nebula hover:bg-space-overlay'
-              }
-            `}
-          >
-            {view3D ? '2D View' : '3D View'}
-          </button>
-        </div>
+        <h1 className="font-space text-[42px] leading-tight text-space-star mb-3">
+          LEARNING PATH
+        </h1>
+        <p className="font-body-space text-space-text text-base leading-relaxed max-w-3xl">
+          Your journey through the cognitive skill universe. Each constellation represents a mastery level.
+          Click on skills to see details.
+        </p>
       </div>
 
+      {/* LOADING STATE */}
+      {loading && (
+        <div className="flex items-center justify-center py-20">
+          <Spinner variant="star" size="lg" />
+        </div>
+      )}
+
+      {/* ERROR STATE */}
+      {error && !loading && (
+        <div className="px-8">
+          <div 
+            className="p-6 border-2 border-space-error rounded-xl"
+            style={{
+              background: 'rgba(248, 113, 113, 0.1)',
+              boxShadow: '0 0 20px rgba(248, 113, 113, 0.2)'
+            }}
+          >
+            <div className="font-space text-space-error text-lg">
+              NAVIGATION ERROR
+            </div>
+            <div className="font-body-space text-space-error text-sm mt-2">
+              {error}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MAIN CONTENT */}
       {!loading && !error && student && (
         <div className="px-8 pb-16">
           {/* OVERALL PROGRESS */}
-          <div className="mb-10 max-w-7xl mx-auto">
-            <CardStar variant="default">
+          <div className="mb-10">
+            <CardStar variant="default" className="max-w-4xl">
               <h3 className="font-space text-[20px] text-space-nebula mb-4">
                 OVERALL MASTERY
               </h3>
@@ -222,7 +157,7 @@ const LearningPathEnhanced = () => {
                     Cognitive Attributes
                   </div>
                   <ProgressStar 
-                    value={
+                    percent={
                       Object.values(student.attributes || {})
                         .reduce((sum, val) => sum + val, 0) / 
                       Object.keys(student.attributes || {}).length
@@ -249,32 +184,17 @@ const LearningPathEnhanced = () => {
             </CardStar>
           </div>
 
-          {/* MAIN CONTENT GRID */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
-            {/* LEFT: SKILL MAP (spans 3 columns) */}
-            <div className="lg:col-span-3">
+          {/* INTERACTIVE SKILL TREE */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* LEFT: SKILL MAP */}
+            <div className="lg:col-span-2">
               <CardStar variant="default">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="font-space text-[18px] text-space-star">
-                    SKILL CONSTELLATION
-                  </h3>
-                  {view3D && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="font-body-space text-space-text-secondary text-xs"
-                    >
-                      Move your mouse to explore 🖱️
-                    </motion.div>
-                  )}
-                </div>
+                <h3 className="font-space text-[18px] text-space-star mb-6">
+                  SKILL CONSTELLATION
+                </h3>
                 
-                <div 
-                  className="relative bg-space-sunken rounded-xl p-8 overflow-hidden"
-                  onMouseMove={handleMouseMove}
-                  onMouseLeave={() => view3D && setRotation({ x: 0, y: 0 })}
-                >
-                  {/* Starfield background */}
+                <div className="relative bg-space-sunken rounded-xl p-8 overflow-hidden">
+                  {/* Starfield background effect */}
                   <div 
                     className="absolute inset-0 opacity-30"
                     style={{
@@ -284,22 +204,11 @@ const LearningPathEnhanced = () => {
                     }}
                   />
                   
-                  <motion.svg 
+                  <svg 
                     ref={svgRef}
-                    viewBox="0 0 360 480" 
+                    viewBox="0 0 320 420" 
                     className="w-full h-auto relative z-10"
-                    style={{ 
-                      minHeight: '480px',
-                      perspective: view3D ? '1000px' : 'none'
-                    }}
-                    animate={view3D ? {
-                      rotateX: rotation.x,
-                      rotateY: rotation.y,
-                    } : {
-                      rotateX: 0,
-                      rotateY: 0,
-                    }}
-                    transition={{ type: 'spring', stiffness: 100, damping: 20 }}
+                    style={{ minHeight: '420px' }}
                   >
                     {/* Connection lines */}
                     <g className="connections">
@@ -312,84 +221,59 @@ const LearningPathEnhanced = () => {
                         const toStatus = getSkillStatus(conn.to)
                         const isActive = fromStatus !== 'locked' && toStatus !== 'locked'
 
-                        // Apply 3D offset
-                        const fromX = fromSkill.x + (view3D ? fromSkill.z * 0.3 : 0)
-                        const toX = toSkill.x + (view3D ? toSkill.z * 0.3 : 0)
-
                         return (
-                          <motion.line
+                          <line
                             key={idx}
-                            x1={fromX + 20}
+                            x1={fromSkill.x + 20}
                             y1={fromSkill.y + 20}
-                            x2={toX + 20}
+                            x2={toSkill.x + 20}
                             y2={toSkill.y + 20}
                             stroke={isActive ? '#A78BFA' : '#2E2A6E'}
                             strokeWidth="2"
                             strokeDasharray={isActive ? '0' : '5,5'}
-                            initial={{ pathLength: 0, opacity: 0 }}
-                            animate={{ pathLength: 1, opacity: isActive ? 0.6 : 0.3 }}
-                            transition={{ duration: 1, delay: idx * 0.1 }}
+                            opacity={isActive ? 0.6 : 0.3}
+                            style={{
+                              transition: 'all 0.3s ease'
+                            }}
                           />
                         )
                       })}
                     </g>
 
                     {/* Skill nodes */}
-                    {allSkills.map((skill, index) => {
+                    {allSkills.map(skill => {
                       const status = getSkillStatus(skill.id)
                       const mastery = getSkillMastery(skill.id)
                       const isSelected = selectedSkill?.id === skill.id
                       const isHovered = hoveredSkill === skill.id
                       const color = getSkillColor(status)
-                      const isNewlyUnlocked = unlockedSkills.has(skill.id) && status !== 'locked'
-
-                      // Apply 3D transformation
-                      const x = skill.x + (view3D ? skill.z * 0.3 : 0)
-                      const scale = view3D ? 1 + skill.z * 0.002 : 1
 
                       return (
-                        <motion.g
+                        <g
                           key={skill.id}
-                          transform={`translate(${x}, ${skill.y})`}
+                          transform={`translate(${skill.x}, ${skill.y})`}
                           onClick={() => handleSkillClick(skill)}
                           onMouseEnter={() => setHoveredSkill(skill.id)}
                           onMouseLeave={() => setHoveredSkill(null)}
                           className="cursor-pointer"
-                          initial={{ scale: 0, opacity: 0 }}
-                          animate={{ 
-                            scale: isNewlyUnlocked ? [0, 1.5, scale] : scale, 
-                            opacity: 1 
-                          }}
-                          transition={{ 
-                            duration: 0.6, 
-                            delay: index * 0.1,
-                            type: 'spring'
-                          }}
-                          whileHover={{ scale: scale * 1.1 }}
+                          style={{ transition: 'all 0.3s ease' }}
                         >
-                          {/* Glow effect */}
+                          {/* Glow effect on hover/select */}
                           {(isSelected || isHovered) && (
-                            <motion.circle
+                            <circle
                               cx="20"
                               cy="20"
                               r="28"
                               fill={color}
                               opacity="0.2"
-                              initial={{ scale: 0.8, opacity: 0 }}
-                              animate={{ 
-                                scale: [0.8, 1.2, 0.8],
-                                opacity: [0.2, 0.4, 0.2]
+                              style={{
+                                filter: `blur(8px)`,
+                                animation: 'pulse 2s ease-in-out infinite'
                               }}
-                              transition={{ 
-                                duration: 2, 
-                                repeat: Infinity,
-                                ease: 'easeInOut'
-                              }}
-                              style={{ filter: 'blur(8px)' }}
                             />
                           )}
 
-                          {/* Outer ring */}
+                          {/* Outer ring (progress) */}
                           <circle
                             cx="20"
                             cy="20"
@@ -400,9 +284,9 @@ const LearningPathEnhanced = () => {
                             opacity="0.3"
                           />
 
-                          {/* Progress arc with animation */}
+                          {/* Progress arc */}
                           {mastery > 0 && (
-                            <motion.circle
+                            <circle
                               cx="20"
                               cy="20"
                               r="22"
@@ -412,24 +296,23 @@ const LearningPathEnhanced = () => {
                               strokeDasharray={`${(mastery / 100) * 138.23} 138.23`}
                               strokeLinecap="round"
                               transform="rotate(-90 20 20)"
-                              initial={{ strokeDasharray: '0 138.23' }}
-                              animate={{ strokeDasharray: `${(mastery / 100) * 138.23} 138.23` }}
-                              transition={{ duration: 1, ease: 'easeOut' }}
+                              style={{
+                                transition: 'stroke-dasharray 0.5s ease'
+                              }}
                             />
                           )}
 
                           {/* Inner circle */}
-                          <motion.circle
+                          <circle
                             cx="20"
                             cy="20"
                             r="18"
                             fill={status === 'locked' ? '#1E1B4B' : color}
                             opacity={status === 'locked' ? 0.5 : 0.9}
                             style={{
-                              filter: status !== 'locked' ? `drop-shadow(0 0 6px ${color})` : 'none'
+                              filter: status !== 'locked' ? `drop-shadow(0 0 6px ${color})` : 'none',
+                              transition: 'all 0.3s ease'
                             }}
-                            whileHover={{ r: 20 }}
-                            transition={{ duration: 0.2 }}
                           />
 
                           {/* Icon/Emoji */}
@@ -471,41 +354,10 @@ const LearningPathEnhanced = () => {
                               {mastery.toFixed(0)}%
                             </text>
                           )}
-
-                          {/* Sparkle animation for mastered skills */}
-                          {status === 'mastered' && (
-                            <>
-                              {[0, 1, 2, 3].map(i => (
-                                <motion.text
-                                  key={i}
-                                  x="20"
-                                  y="20"
-                                  textAnchor="middle"
-                                  dominantBaseline="central"
-                                  fontSize="8"
-                                  initial={{ opacity: 0, scale: 0 }}
-                                  animate={{
-                                    opacity: [0, 1, 0],
-                                    scale: [0, 1.5, 0],
-                                    x: 20 + Math.cos(i * Math.PI / 2) * 30,
-                                    y: 20 + Math.sin(i * Math.PI / 2) * 30
-                                  }}
-                                  transition={{
-                                    duration: 2,
-                                    repeat: Infinity,
-                                    delay: i * 0.5,
-                                    ease: 'easeOut'
-                                  }}
-                                >
-                                  ✨
-                                </motion.text>
-                              ))}
-                            </>
-                          )}
-                        </motion.g>
+                        </g>
                       )
                     })}
-                  </motion.svg>
+                  </svg>
 
                   {/* Legend */}
                   <div className="flex flex-wrap gap-4 mt-6 pt-6 border-t border-space-surface">
@@ -530,16 +382,9 @@ const LearningPathEnhanced = () => {
               </CardStar>
             </div>
 
-            {/* RIGHT: RECOMMENDATIONS */}
+            {/* RIGHT: SKILL DETAILS */}
             <div className="lg:col-span-1">
-              <SkillRecommendations
-                allSkills={allSkills}
-                getSkillMastery={getSkillMastery}
-                getSkillStatus={getSkillStatus}
-              />
-              
-              {/* SKILL DETAILS (below recommendations) */}
-              <CardStar variant="achievement" className="mt-8">
+              <CardStar variant="achievement" className="sticky top-8">
                 {selectedSkill ? (
                   <div>
                     <div className="text-center mb-4">
@@ -560,7 +405,7 @@ const LearningPathEnhanced = () => {
                         <div className="font-body-space text-space-text-secondary text-sm mb-2">
                           Mastery Level
                         </div>
-                        <ProgressStar value={getSkillMastery(selectedSkill.id)} />
+                        <ProgressStar percent={getSkillMastery(selectedSkill.id)} />
                       </div>
 
                       <div>
@@ -598,7 +443,7 @@ const LearningPathEnhanced = () => {
                       SELECT A SKILL
                     </div>
                     <div className="font-body-space text-space-text-secondary text-sm">
-                      Click on any skill node to view details
+                      Click on any skill node to view details and track your progress
                     </div>
                   </div>
                 )}
@@ -611,6 +456,7 @@ const LearningPathEnhanced = () => {
   )
 }
 
+// Helper function for skill descriptions
 const getSkillDescription = (skillId) => {
   const descriptions = {
     logic: 'Foundation of analytical thinking. Solve puzzles, identify patterns, and make deductions.',
@@ -623,10 +469,11 @@ const getSkillDescription = (skillId) => {
   return descriptions[skillId] || 'Master this skill to unlock new abilities.'
 }
 
+// Helper function for next milestone
 const getNextMilestone = (currentMastery) => {
   if (currentMastery < 50) return `Reach 50% to unlock Learning status (${(50 - currentMastery).toFixed(0)}% to go)`
   if (currentMastery < 80) return `Reach 80% to achieve Mastered status (${(80 - currentMastery).toFixed(0)}% to go)`
   return 'Skill Mastered! Keep practicing to maintain proficiency.'
 }
 
-export default LearningPathEnhanced
+export default LearningPath

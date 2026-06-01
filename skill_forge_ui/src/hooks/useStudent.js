@@ -9,10 +9,15 @@ export const useStudent = () => {
   const { student, setStudent } = useStudentStore()
   const user = useAuthStore(state => state.user)
 
-  const fetchStudent = async () => {
+  const fetchStudent = async (force = false) => {
     const studentId = user?.student_id
     if (!studentId) {
       setError('No student ID available')
+      return
+    }
+
+    // If we already have student data and not forcing refresh, skip API call
+    if (student && !force) {
       return
     }
     
@@ -23,16 +28,20 @@ export const useStudent = () => {
       setStudent(data)
     } catch (err) {
       setError(err.message || 'Failed to load student data')
+      console.error('Failed to fetch student:', err)
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchStudent()
+    // Only fetch if student data is not already in store/localStorage
+    if (!student && user?.student_id) {
+      fetchStudent()
+    }
   }, [user?.student_id])
 
-  const refetch = () => fetchStudent()
+  const refetch = () => fetchStudent(true)
 
   return { student, loading, error, refetch }
 }

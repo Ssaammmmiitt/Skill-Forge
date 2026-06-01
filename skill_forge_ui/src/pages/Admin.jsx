@@ -52,18 +52,36 @@ const Admin = () => {
     }
   }
 
-  const formatPercent = (value) => (value * 100).toFixed(1) + '%'
+  const formatPercent = (value) => {
+    if (value === null || value === undefined || isNaN(value)) return 'N/A'
+    return (value * 100).toFixed(1) + '%'
+  }
 
   const getWinner = () => {
     if (!metrics) return null
-    const dtF1 = metrics.decision_tree.f1_score
-    const nnF1 = metrics.neural_net.f1_score
-    return dtF1 >= nnF1 
-      ? { name: 'DECISION TREE', f1: formatPercent(dtF1) }
-      : { name: 'NEURAL NET', f1: formatPercent(nnF1) }
+    try {
+      const dtF1 = metrics.decision_tree?.f1_score
+      const nnF1 = metrics.neural_net?.f1_score
+      
+      if (dtF1 === undefined || nnF1 === undefined) return null
+      
+      return dtF1 >= nnF1 
+        ? { name: 'DECISION TREE', f1: formatPercent(dtF1) }
+        : { name: 'NEURAL NET', f1: formatPercent(nnF1) }
+    } catch (err) {
+      console.error('Error calculating winner:', err)
+      return null
+    }
   }
 
   const winner = getWinner()
+
+  // Check if metrics data is valid
+  const hasValidMetrics = metrics && 
+    metrics.decision_tree && 
+    metrics.neural_net &&
+    typeof metrics.decision_tree.accuracy !== 'undefined' &&
+    typeof metrics.neural_net.accuracy !== 'undefined'
 
   return (
     <div className="min-h-full bg-raw-white">
@@ -96,29 +114,35 @@ const Admin = () => {
           </div>
         )}
 
-        {!loading && !error && metrics && (
+        {!loading && !error && metrics && !hasValidMetrics && (
+          <div className="border-[3px] border-raw-warning p-4 font-raw text-raw-black text-[14px] uppercase tracking-[1px]">
+            INVALID METRICS DATA — Model comparison file may be corrupted. Try retraining the models.
+          </div>
+        )}
+
+        {!loading && !error && metrics && hasValidMetrics && (
           <div>
             {/* DECISION TREE MODEL */}
             <CardRaw>
               <h3 className="font-raw text-[24px] uppercase text-raw-black mb-6">
                 DECISION TREE
               </h3>
-              <div className="flex gap-4">
+              <div className="flex gap-4 flex-wrap">
                 <MetricRaw 
                   label="ACCURACY" 
-                  value={formatPercent(metrics.decision_tree.accuracy)} 
+                  value={formatPercent(metrics.decision_tree?.accuracy)} 
                 />
                 <MetricRaw 
                   label="PRECISION" 
-                  value={formatPercent(metrics.decision_tree.precision)} 
+                  value={formatPercent(metrics.decision_tree?.precision)} 
                 />
                 <MetricRaw 
                   label="RECALL" 
-                  value={formatPercent(metrics.decision_tree.recall)} 
+                  value={formatPercent(metrics.decision_tree?.recall)} 
                 />
                 <MetricRaw 
                   label="F1" 
-                  value={formatPercent(metrics.decision_tree.f1_score)} 
+                  value={formatPercent(metrics.decision_tree?.f1_score)} 
                 />
               </div>
             </CardRaw>
@@ -131,22 +155,22 @@ const Admin = () => {
               <h3 className="font-raw text-[24px] uppercase text-raw-black mb-6">
                 NEURAL NET
               </h3>
-              <div className="flex gap-4">
+              <div className="flex gap-4 flex-wrap">
                 <MetricRaw 
                   label="ACCURACY" 
-                  value={formatPercent(metrics.neural_net.accuracy)} 
+                  value={formatPercent(metrics.neural_net?.accuracy)} 
                 />
                 <MetricRaw 
                   label="PRECISION" 
-                  value={formatPercent(metrics.neural_net.precision)} 
+                  value={formatPercent(metrics.neural_net?.precision)} 
                 />
                 <MetricRaw 
                   label="RECALL" 
-                  value={formatPercent(metrics.neural_net.recall)} 
+                  value={formatPercent(metrics.neural_net?.recall)} 
                 />
                 <MetricRaw 
                   label="F1" 
-                  value={formatPercent(metrics.neural_net.f1_score)} 
+                  value={formatPercent(metrics.neural_net?.f1_score)} 
                 />
               </div>
             </CardRaw>

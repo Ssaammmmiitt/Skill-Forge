@@ -8,6 +8,8 @@ import ButtonOffset from '../components/ui/ButtonOffset'
 import BadgeStar from '../components/ui/BadgeStar'
 import ProgressStar from '../components/ui/ProgressStar'
 import Spinner from '../components/ui/Spinner'
+import { getLevelInfo } from '../utils/formatters'
+import { XP_PER_LEVEL } from '../utils/constants'
 
 const Dashboard = () => {
   const navigate = useNavigate()
@@ -54,11 +56,7 @@ const Dashboard = () => {
     )
   }
 
-  const xpPerLevel = 500
-  const currentLevelXP = student.xp % xpPerLevel
-  const xpProgress = (currentLevelXP / xpPerLevel) * 100
-  const nextLevel = student.level + 1
-  const xpToNextLevel = nextLevel * xpPerLevel
+  const levelInfo = getLevelInfo(student.xp, XP_PER_LEVEL)
 
   return (
     <div className="min-h-full">
@@ -93,8 +91,8 @@ const Dashboard = () => {
 
         <div className="mt-8 max-w-2xl">
           <ProgressStar
-            value={xpProgress}
-            label={`LEVEL ${student.level} PROGRESS — ${student.xp} / ${xpToNextLevel} XP`}
+            value={levelInfo.progress}
+            label={`LEVEL ${levelInfo.currentLevel} PROGRESS — ${levelInfo.currentLevelXP} / ${levelInfo.xpForNextLevel} XP`}
           />
         </div>
       </section>

@@ -4,7 +4,7 @@ import { useAuthStore } from '../../store/useAuthStore'
 import ProgressRaw from '../ui/ProgressRaw'
 import ThemeToggle from '../ui/ThemeToggle'
 import ButtonOffset from '../ui/ButtonOffset'
-import { calculateLevelProgress } from '../../utils/formatters'
+import { getLevelInfo } from '../../utils/formatters'
 import { XP_PER_LEVEL } from '../../utils/constants'
 
 const Sidebar = () => {
@@ -71,15 +71,22 @@ const Sidebar = () => {
       </div>
 
       <div className="px-6 pb-6">
-        <div className="font-mono text-[10px] text-raw-text-tertiary uppercase mb-2">
-          XP PROGRESS
-        </div>
-        <ProgressRaw
-          value={calculateLevelProgress(student?.xp || 0, XP_PER_LEVEL)}
-        />
-        <div className="font-mono text-[10px] text-raw-text-secondary mt-1">
-          {student?.xp || 0} / {XP_PER_LEVEL}
-        </div>
+        {(() => {
+          const levelInfo = getLevelInfo(student?.xp || 0, XP_PER_LEVEL)
+          return (
+            <>
+              <div className="font-mono text-[10px] text-raw-text-tertiary uppercase mb-2">
+                LEVEL {levelInfo.currentLevel} XP
+              </div>
+              <ProgressRaw
+                value={levelInfo.progress}
+              />
+              <div className="font-mono text-[10px] text-raw-text-secondary mt-1">
+                {levelInfo.currentLevelXP} / {levelInfo.xpForNextLevel} XP
+              </div>
+            </>
+          )
+        })()}
       </div>
 
       <div className="px-6 pb-6 flex justify-center">

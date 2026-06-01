@@ -9,6 +9,39 @@ export const formatDuration = (seconds) => {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-export const calculateLevelProgress = (xp, xpPerLevel = 1000) => {
-  return (xp % xpPerLevel) / xpPerLevel * 100
+// Calculate level from total XP
+export const calculateLevel = (totalXP, xpPerLevel = 1000) => {
+  return Math.floor(totalXP / xpPerLevel) + 1
+}
+
+// Calculate XP within current level (e.g., 350 out of 1000)
+export const calculateCurrentLevelXP = (totalXP, xpPerLevel = 1000) => {
+  return totalXP % xpPerLevel
+}
+
+// Calculate XP needed for next level
+export const calculateXPForNextLevel = (xpPerLevel = 1000) => {
+  return xpPerLevel
+}
+
+// Calculate progress percentage within current level
+export const calculateLevelProgress = (totalXP, xpPerLevel = 1000) => {
+  const currentLevelXP = calculateCurrentLevelXP(totalXP, xpPerLevel)
+  return (currentLevelXP / xpPerLevel) * 100
+}
+
+// Get full level info object
+export const getLevelInfo = (totalXP, xpPerLevel = 1000) => {
+  const currentLevel = calculateLevel(totalXP, xpPerLevel)
+  const currentLevelXP = calculateCurrentLevelXP(totalXP, xpPerLevel)
+  const xpForNextLevel = xpPerLevel
+  const progress = calculateLevelProgress(totalXP, xpPerLevel)
+  
+  return {
+    currentLevel,
+    currentLevelXP,
+    xpForNextLevel,
+    progress,
+    totalXP
+  }
 }

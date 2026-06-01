@@ -247,7 +247,8 @@ const Quiz = () => {
         <QuizThemeFab />
         <button
           onClick={() => navigate('/')}
-          className="fixed top-6 left-6 font-arcade text-[8px] text-arcade-secondary hover:text-arcade-primary tracking-[2px]"
+          className="fixed top-6 left-6 font-arcade text-[11px] font-bold text-arcade-secondary hover:text-arcade-primary hover:scale-110 tracking-[2px] transition-all duration-200 px-3 py-2 border-[2px] border-arcade-secondary hover:border-arcade-primary"
+          style={{ borderRadius: '0px' }}
         >
           ← EXIT
         </button>
@@ -273,23 +274,23 @@ const Quiz = () => {
           </div>
         ) : (
           <div
-            className="border-[3px] border-dotted border-arcade-primary max-w-lg w-full p-10"
+            className="border-[4px] border-dotted border-arcade-primary max-w-lg w-full p-12 transition-all duration-300 hover:border-space-nebula hover:shadow-2xl"
             style={{ borderRadius: '0px' }}
           >
             <div className="text-center">
-              <div className="font-arcade text-[9px] text-arcade-secondary tracking-[3px] mb-8">
+              <div className="font-arcade text-[10px] text-arcade-secondary tracking-[3px] mb-8">
                 SKILL FORGE
               </div>
-              <h1 className="font-arcade text-[22px] text-space-star tracking-[4px] mb-2">
+              <h1 className="font-arcade text-[26px] text-space-star tracking-[4px] mb-2">
                 ASSESSMENT
               </h1>
-              <div className="font-arcade text-[9px] text-arcade-secondary tracking-[2px]">
+              <div className="font-arcade text-[10px] text-arcade-secondary tracking-[2px]">
                 MODE // ADAPTIVE
               </div>
 
-              <div className="border-b-[3px] border-dotted border-arcade-primary my-6" />
+              <div className="border-b-[3px] border-dotted border-arcade-primary my-8" />
 
-              <div className="grid grid-cols-3 gap-4 mb-8">
+              <div className="grid grid-cols-3 gap-5 mb-10">
                 <MetricArcade label="QUESTIONS" value="05" />
                 <MetricArcade label="DIFFICULTY" value="05" />
                 <MetricArcade label="TIME/Q" value="30S" />
@@ -319,7 +320,8 @@ const Quiz = () => {
         <QuizThemeFab />
         <button
           onClick={() => navigate('/')}
-          className="fixed top-6 left-6 font-arcade text-[8px] text-arcade-secondary hover:text-arcade-primary tracking-[2px]"
+          className="fixed top-6 left-6 font-arcade text-[11px] font-bold text-arcade-secondary hover:text-arcade-primary hover:scale-110 tracking-[2px] transition-all duration-200 px-3 py-2 border-[2px] border-arcade-secondary hover:border-arcade-primary"
+          style={{ borderRadius: '0px' }}
         >
           ← EXIT
         </button>
@@ -344,30 +346,30 @@ const Quiz = () => {
             <ProgressRaw value={(timeLeft / 30) * 100} />
           </div>
 
-          <div className="border-l-[5px] border-arcade-primary pl-6 mt-4 mb-8">
-            <h2 className="font-raw text-raw-white text-[24px] uppercase leading-tight">
+          <div className="border-l-[6px] border-arcade-primary pl-7 mt-6 mb-10">
+            <h2 className="font-raw text-raw-white text-[28px] uppercase leading-tight">
               {currentQuestion.question}
             </h2>
           </div>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             {currentQuestion.options.map((option, index) => (
               <div
                 key={index}
                 onClick={() => handleAnswerSelect(index)}
                 className={`
-                  bg-arcade-surface border-[3px] border-dotted p-4 cursor-pointer
-                  flex items-center
-                  ${selectedIndex === null ? 'hover:border-space-nebula hover:bg-arcade-hover' : ''}
-                  ${selectedIndex === index ? 'border-solid border-raw-white bg-arcade-hover' : 'border-arcade-primary'}
+                  bg-arcade-surface border-[3px] border-dotted p-5 cursor-pointer
+                  flex items-center transition-all duration-200
+                  ${selectedIndex === null ? 'hover:border-space-nebula hover:bg-arcade-hover hover:scale-[1.02] hover:shadow-lg' : ''}
+                  ${selectedIndex === index ? 'border-solid border-raw-white bg-arcade-hover scale-[1.02]' : 'border-arcade-primary'}
                 `}
                 style={{ borderRadius: '0px' }}
               >
-                <span className="font-arcade text-[10px] text-arcade-primary mr-4">
+                <span className="font-arcade text-[12px] text-arcade-primary mr-5 min-w-[20px]">
                   {String.fromCharCode(65 + index)}
                 </span>
                 <span
-                  className={`font-arcade text-[9px] tracking-[1px] leading-relaxed ${
+                  className={`font-arcade text-[10px] tracking-[1px] leading-relaxed ${
                     selectedIndex === index ? 'text-raw-white' : 'text-arcade-secondary'
                   }`}
                 >
@@ -402,16 +404,16 @@ const Quiz = () => {
 
           <div className="mb-6">
             <div
-              className={`bg-arcade-surface border-[3px] border-solid p-4 ${
+              className={`bg-arcade-surface border-[3px] border-solid p-5 transition-all duration-200 ${
                 isCorrect ? 'border-space-success' : 'border-arcade-primary'
               }`}
               style={{ borderRadius: '0px' }}
             >
-              <span className="font-arcade text-[10px] text-arcade-primary mr-4">
+              <span className="font-arcade text-[12px] text-arcade-primary mr-5 min-w-[20px] inline-block">
                 {String.fromCharCode(65 + currentQuestion.correct_index)}
               </span>
               <span
-                className={`font-arcade text-[9px] tracking-[1px] leading-relaxed ${
+                className={`font-arcade text-[10px] tracking-[1px] leading-relaxed ${
                   isCorrect ? 'text-space-success' : 'text-arcade-secondary'
                 }`}
               >

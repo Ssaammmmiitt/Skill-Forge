@@ -1,7 +1,8 @@
-# Skill Forge API — Backend Progress & Reference
+# Skill Forge API
 
-FastAPI REST API for the Skill Forge adaptive learning platform.  
-Migrated from Flask; all routes return a consistent JSON envelope.
+> FastAPI backend for Skill Forge adaptive learning platform
+
+**All routes return a consistent JSON envelope.** Migrated from Flask to FastAPI for improved performance and type safety.
 
 ---
 

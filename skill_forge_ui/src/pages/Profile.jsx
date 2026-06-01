@@ -5,6 +5,8 @@ import BadgeArcade from '../components/ui/BadgeArcade'
 import ProgressStar from '../components/ui/ProgressStar'
 import StatRing from '../components/ui/StatRing'
 import Spinner from '../components/ui/Spinner'
+import { getLevelInfo } from '../utils/formatters'
+import { XP_PER_LEVEL } from '../utils/constants'
 
 const Profile = () => {
   const { student, loading, error } = useStudent()
@@ -57,12 +59,7 @@ const Profile = () => {
     )
   }
 
-  const xpPerLevel = 500
-  const currentLevelXP = student.xp % xpPerLevel
-  const xpProgress = (currentLevelXP / xpPerLevel) * 100
-  const nextLevel = student.level + 1
-  const xpToNextLevel = nextLevel * xpPerLevel
-
+  const levelInfo = getLevelInfo(student.xp, XP_PER_LEVEL)
   const mockSessions = student.recent_sessions || []
 
   return (
@@ -92,18 +89,18 @@ const Profile = () => {
 
           <div className="mt-4 flex items-center gap-3">
             <span className="font-raw text-raw-white text-sm uppercase tracking-[2px]">
-              LEVEL {student.level}
+              LEVEL {levelInfo.currentLevel}
             </span>
             <span className="text-space-nebula">·</span>
             <span className="font-mono text-space-nebula text-sm">
-              {student.xp} XP
+              {levelInfo.totalXP} XP TOTAL
             </span>
           </div>
 
           <div className="mt-3 w-64">
             <ProgressStar
-              value={xpProgress}
-              label={`${student.xp} / ${xpToNextLevel} TO LEVEL ${nextLevel}`}
+              value={levelInfo.progress}
+              label={`${levelInfo.currentLevelXP} / ${levelInfo.xpForNextLevel} XP TO LEVEL ${levelInfo.currentLevel + 1}`}
             />
           </div>
         </section>

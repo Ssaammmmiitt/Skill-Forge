@@ -393,8 +393,19 @@ def get_metrics():
         return error("Models not yet evaluated — run models/compare.py", 503)
 
     df = pd.read_csv(csv_path)
-    metrics = df.to_dict(orient="records")
-    return success({"metrics": metrics})
+    
+    # Transform CSV structure to match frontend expectations
+    metrics_dict = {}
+    for _, row in df.iterrows():
+        model_name = str(row['Model']).lower().replace(' ', '_')
+        metrics_dict[model_name] = {
+            'accuracy': float(row['Accuracy']),
+            'precision': float(row['Precision_Macro']),
+            'recall': float(row['Recall_Macro']),
+            'f1_score': float(row['F1_Macro'])
+        }
+    
+    return success(metrics_dict)
 
 
 @router.post("/admin/retrain")
