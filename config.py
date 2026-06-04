@@ -24,8 +24,32 @@ DIFFICULTY_MIN            = 1
 DIFFICULTY_MAX            = 10
 DIFFICULTY_LOOKBACK       = 3      # sessions to consider
 
+# Quiz / ML feature engineering
+QUIZ_QUESTION_COUNT = 5
+
 # Learning style labels
 STYLE_FAST        = "fast_learner"
 STYLE_SLOW        = "slow_learner"
 STYLE_CONCEPTUAL  = "conceptual"
 STYLE_MEMORIZER   = "memorization"
+
+# Model artifact paths (relative to repo root)
+DT_MODEL_PATH = "models/saved/dt_model.pkl"
+NN_MODEL_PATH = "models/saved/nn_model_full.pt"
+SCALER_PATH = "models/saved/scaler.pkl"
+LE_PATH = "models/saved/label_encoder.pkl"
+
+# Core columns stored in training CSV
+SESSION_FEATURE_COLS = ["quiz_score", "time_taken", "mistakes", "difficulty"]
+
+# Full feature vector for ML (includes derived)
+ML_FEATURE_NAMES = [
+    "quiz_score",
+    "time_taken",
+    "mistakes",
+    "difficulty",
+    "accuracy_rate",
+    "mistake_rate",
+    "time_per_question",
+    "pace_index",
+]

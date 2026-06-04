@@ -59,3 +59,19 @@ reports/*.html
 
 # Node (for frontend)
 node_modules/
+
+# Python venv at repo root (if created without .venv name)
+Lib/
+Scripts/
+pyvenv.cfg
+share/
+
+# Internal / agent / build documentation (not shipped with the app)
+**/SKILL.md
+skills/
+skill_forge/skills/
+api/README.md
+skill_forge_ui/PROJECT_REPORT.md
+skill_forge_ui/README.md
+
+# Project markdown kept in git: README.md, DESIGN.md, AI_REPORT.md, CONTENT.md (root only)

@@ -1,18 +1,19 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useStudentStore } from '../store/useStudentStore'
 import { useAuthStore } from '../store/useAuthStore'
 import { getStudent } from '../api/student'
+import { resolveStudentId } from '../utils/resolveStudentId'
 
 export const useStudent = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const { student, setStudent } = useStudentStore()
-  const user = useAuthStore(state => state.user)
+  const user = useAuthStore((state) => state.user)
 
-  const fetchStudent = async (force = false) => {
-    const studentId = user?.student_id
+  const fetchStudent = useCallback(async (force = false) => {
+    const studentId = resolveStudentId(user, student)
     if (!studentId) {
-      setError('No student ID available')
+      setError('Sign in again to load your profile.')
       return
     }
 
@@ -32,14 +33,15 @@ export const useStudent = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user, student, setStudent])
 
   useEffect(() => {
-    // Only fetch if student data is not already in store/localStorage
-    if (!student && user?.student_id) {
-      fetchStudent()
+    const studentId = resolveStudentId(user, null)
+    if (studentId) {
+      fetchStudent(true)
     }
-  }, [user?.student_id])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.user_id, user?.student_id])
 
   const refetch = () => fetchStudent(true)
 

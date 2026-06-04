@@ -1,12 +1,12 @@
 import { useEffect } from 'react'
 import { useStudent } from '../hooks/useStudent'
 import BadgeStar from '../components/ui/BadgeStar'
-import BadgeArcade from '../components/ui/BadgeArcade'
 import ProgressStar from '../components/ui/ProgressStar'
 import StatRing from '../components/ui/StatRing'
 import Spinner from '../components/ui/Spinner'
 import { getLevelInfo } from '../utils/formatters'
 import { XP_PER_LEVEL } from '../utils/constants'
+import PageIntro from '../components/layout/PageIntro'
 
 const Profile = () => {
   const { student, loading, error } = useStudent()
@@ -60,14 +60,19 @@ const Profile = () => {
   }
 
   const levelInfo = getLevelInfo(student.xp, XP_PER_LEVEL)
-  const mockSessions = student.recent_sessions || []
 
   return (
     <div className="min-h-full bg-space-deep">
       <div className="max-w-[1200px] mx-auto px-16">
-        
+        <section className="pt-12">
+          <PageIntro
+            title="PROFILE"
+            purpose="Your character sheet: level, XP, ML learning style, and core attributes. Everything here updates from quizzes and activity logs."
+          />
+        </section>
+
         {/* SECTION 1: IDENTITY BAND */}
-        <section className="py-20">
+        <section className="pb-20 pt-4">
           <div
             className="w-20 h-20 rounded-circle bg-space-overlay border-[2px] border-space-nebula flex items-center justify-center"
             style={{ boxShadow: '0 0 16px rgba(167,139,250,0.4)' }}
@@ -170,33 +175,6 @@ const Profile = () => {
               </div>
             </div>
           </div>
-        </section>
-
-        {/* SECTION 4: DIVIDER */}
-        <div className="border-b border-space-overlay" />
-
-        {/* SECTION 5: RECENT SESSIONS */}
-        <section className="py-16 pb-24">
-          <h2 className="font-space font-bold text-[28px] text-raw-white mb-8">
-            Recent Sessions
-          </h2>
-
-          {mockSessions.map((session, index) => (
-            <div
-              key={index}
-              className="border-b border-space-overlay py-4 flex justify-between items-center"
-            >
-              <div className="font-raw text-raw-white text-sm uppercase tracking-[2px]">
-                {session.topic}
-              </div>
-              <div className="font-mono text-space-nebula text-sm">
-                {session.quiz_score} / 100
-              </div>
-              <div>
-                <BadgeArcade>LVL {session.difficulty}</BadgeArcade>
-              </div>
-            </div>
-          ))}
         </section>
       </div>
     </div>

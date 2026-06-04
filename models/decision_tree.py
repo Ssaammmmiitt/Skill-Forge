@@ -11,7 +11,7 @@ from models.features import load_and_prepare, save_preprocessors
 
 def main():
     # 2. Call load_and_prepare
-    X_train, X_test, y_train, y_test, scaler, label_encoder = load_and_prepare("data/training_data.csv")
+    X_train, X_test, y_train, y_test, scaler, label_encoder = load_and_prepare()
     
     # 3. Train DT classifier
     clf = DecisionTreeClassifier(

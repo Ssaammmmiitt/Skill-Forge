@@ -11,7 +11,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from api.exceptions import ApiError
 from api.responses import error
-from api.routers import auth, game
+from api.routers import auth, game, todos
+from data.models import create_tables, get_db
 
 
 def create_app() -> FastAPI:
@@ -40,8 +41,18 @@ def create_app() -> FastAPI:
         traceback.print_exc()
         return error("Internal server error", 500)
 
+    @app.on_event("startup")
+    def init_database():
+        conn = get_db()
+        try:
+            create_tables(conn)
+            conn.commit()
+        finally:
+            conn.close()
+
     app.include_router(auth.router)
     app.include_router(game.router)
+    app.include_router(todos.router)
 
     return app
 

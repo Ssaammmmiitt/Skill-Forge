@@ -10,6 +10,7 @@ import ProgressStar from '../components/ui/ProgressStar'
 import Spinner from '../components/ui/Spinner'
 import { getLevelInfo } from '../utils/formatters'
 import { XP_PER_LEVEL } from '../utils/constants'
+import PageIntro from '../components/layout/PageIntro'
 
 const Dashboard = () => {
   const navigate = useNavigate()
@@ -80,8 +81,16 @@ const Dashboard = () => {
       {/* RAW DIVIDER */}
       <div className="border-b-[5px] border-raw-white" />
 
+      <section className="bg-space-deep px-16 py-8">
+        <PageIntro
+          title="HOME"
+          purpose="Your command center: quick stats, recent quiz performance, and shortcuts. Start here after login."
+          steps={['Take a quiz for ML insights', 'Log daily habits', 'Check Analytics and Learning Path']}
+        />
+      </section>
+
       {/* STAT CARDS ROW - StarChart cosmic metrics */}
-      <section className="bg-space-deep px-16 py-12">
+      <section className="bg-space-deep px-16 py-12 pt-0">
         <div className="flex gap-8">
           <MetricStar label="TODAY'S XP" value="0" />
           <MetricStar label="QUIZ ACCURACY" value={`${calculateAccuracy()}%`} />

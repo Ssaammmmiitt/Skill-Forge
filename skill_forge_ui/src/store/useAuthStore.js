@@ -3,7 +3,16 @@ import { create } from 'zustand'
 // Check for existing token on init
 const token = localStorage.getItem('sf_token')
 const userStr = localStorage.getItem('sf_user')
-const initialUser = userStr ? JSON.parse(userStr) : null
+const normalizeUser = (user) => {
+  if (!user) return null
+  const id = user.student_id || user.user_id
+  return id ? { ...user, student_id: id, user_id: user.user_id || id } : user
+}
+
+const initialUser = normalizeUser(userStr ? JSON.parse(userStr) : null)
+if (initialUser) {
+  localStorage.setItem('sf_user', JSON.stringify(initialUser))
+}
 
 export const useAuthStore = create((set) => ({
   user: initialUser,
@@ -11,18 +20,20 @@ export const useAuthStore = create((set) => ({
   isAuthenticated: !!token,
   
   setAuth: (token, user) => {
+    const normalized = normalizeUser(user)
     localStorage.setItem('sf_token', token)
-    localStorage.setItem('sf_user', JSON.stringify(user))
-    set({ 
-      token, 
-      user: { ...user, student_id: user.user_id }, // Map user_id to student_id
-      isAuthenticated: true 
+    localStorage.setItem('sf_user', JSON.stringify(normalized))
+    set({
+      token,
+      user: normalized,
+      isAuthenticated: true,
     })
   },
-  
+
   setUser: (user) => {
-    localStorage.setItem('sf_user', JSON.stringify(user))
-    set({ user: { ...user, student_id: user.user_id } })
+    const normalized = normalizeUser(user)
+    localStorage.setItem('sf_user', JSON.stringify(normalized))
+    set({ user: normalized })
   },
   
   setToken: (token) => {

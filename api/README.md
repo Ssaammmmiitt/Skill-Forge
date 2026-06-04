@@ -29,7 +29,7 @@ api/
 ├── exceptions.py       # ApiError for auth failures
 ├── routers/
 │   ├── auth.py         # /api/auth/*
-│   └── game.py         # /api/* (student, quiz, analytics, admin)
+│   └── game.py         # /api/* (student, quiz, analytics, cognitive)
 └── services/
     ├── auth_store.py   # Users table, username migration, bcrypt
     └── jwt_auth.py     # Token encode/decode
@@ -108,8 +108,7 @@ On failure, `data` is `null` and `error` contains a message string.
 | POST | `/quiz/submit` | No* | Score, XP, streak, difficulty adjustment, ML style prediction |
 | GET | `/leaderboard` | No | Top 10; query `sort_by=xp|INT|WIS` |
 | GET | `/analytics/{id}` | No* | Trends, style history, consistency, radar |
-| GET | `/admin/metrics` | No | Model comparison CSV metrics |
-| POST | `/admin/retrain` | No | Starts background training pipeline |
+| GET | `/cognitive/{student_id}` | No | ML cognitive profile + learning path |
 
 \*Protected in production by frontend; API does not enforce JWT on game routes yet.
 
@@ -193,7 +192,7 @@ python test_auth.py
 
 - Game routes are not JWT-gated on the server (rely on frontend `ProtectedRoute`).
 - `GET /leaderboard` uses dynamic SQL `ORDER BY` — sort column is validated against a whitelist.
-- Admin retrain spawns a shell subprocess; intended for dev/admin use only.
+- Train models offline: `python scripts/setup_ml.py` (see `AI_REPORT.md`).
 - Google token verification requires matching authorized origins in Google Cloud Console.
 
 ---

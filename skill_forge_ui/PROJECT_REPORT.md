@@ -56,7 +56,7 @@ Three visual systems in deliberate tension — do not harmonize them. Full spec:
 
 | System | Primary pages | Character |
 |--------|---------------|-----------|
-| **RawBlock** | Login, Logger, Admin, Landing CTAs | Brutalist: 0px radius, 3–5px borders, Archivo Black, no shadows |
+| **RawBlock** | Login, Logger, Landing CTAs | Brutalist: 0px radius, 3–5px borders, Archivo Black, no shadows |
 | **StarChart** | Register, Profile, Analytics, Learning Path | Cosmic: soft radius 8–16px, Fredoka headers, nebula glows |
 | **Arcade** | Quiz, Leaderboard | Retro: black screen, dotted borders, Press Start 2P (min 8px) |
 | **Collision** | Dashboard | All three systems in horizontal bands |
@@ -123,11 +123,10 @@ All routes below require `useAuthStore.isAuthenticated`. Unauthenticated access 
 | `/app/path` | Learning path | App shell |
 | `/app/analytics` | Analytics | App shell |
 | `/app/leaderboard` | Leaderboard | App shell |
-| `/app/admin` | Model admin | App shell |
 | `/app/test` | Component gallery | App shell |
 | `/quiz` | Adaptive quiz | Full-screen (no sidebar) |
 
-**Legacy shortcuts** (protected): `/analytics`, `/log`, `/profile`, `/leaderboard`, `/path`, `/admin` → redirect into `/app/...`.
+**Legacy shortcuts** (protected): `/analytics`, `/log`, `/profile`, `/leaderboard`, `/path` → redirect into `/app/...`.
 
 **Catch-all:** `*` → `/` (landing).
 
@@ -165,15 +164,11 @@ Identity, StatRings, learning style, session history.
 
 ### Analytics (`/app/analytics`)
 
-Score/difficulty/time trends, style distribution, consistency, cognitive radar — `GET /api/analytics/{id}`.
+Score/difficulty/time trends, ML style distribution, AI cognitive summary, radar — `GET /api/analytics/{id}`.
 
 ### Leaderboard (`/app/leaderboard`)
 
 Top players; sort XP / INT / WIS — `GET /api/leaderboard`.
-
-### Admin (`/app/admin`)
-
-Model metrics, retrain — `GET/POST /api/admin/*`.
 
 ### Component test (`/app/test`)
 
@@ -184,7 +179,7 @@ Internal Raw / Star / Arcade component showcase.
 ## API integration
 
 - **Client** (`src/api/client.js`): base URL from `VITE_API_URL` or Vite proxy `/api`; unwraps `{ data, error, status }` → `data`
-- **Modules:** `auth.js`, `student.js`, `quiz.js`, `analytics.js`, `admin.js`
+- **Modules:** `auth.js`, `student.js`, `quiz.js`, `analytics.js`, `cognitive.js`
 - **Pattern:** pages use hooks or store methods — avoid raw axios in components
 
 **Expected endpoints:**
@@ -197,10 +192,9 @@ Internal Raw / Star / Arcade component showcase.
 | POST | `/api/student/log-activity` | Logger |
 | GET | `/api/quiz/:difficulty` | Quiz load |
 | POST | `/api/quiz/submit` | Quiz submit |
-| GET | `/api/analytics/:id` | Analytics |
+| GET | `/api/analytics/:id` | Analytics + cognitive summary |
+| GET | `/api/cognitive/:id` | Full ML cognitive profile |
 | GET | `/api/leaderboard` | Leaderboard |
-| GET | `/api/admin/metrics` | Admin |
-| POST | `/api/admin/retrain` | Retrain |
 
 ---
 
@@ -223,7 +217,7 @@ Internal Raw / Star / Arcade component showcase.
 ```
 skill_forge_ui/
 ├── src/
-│   ├── api/                 # client, auth, student, quiz, analytics, admin
+│   ├── api/                 # client, auth, student, quiz, analytics, cognitive
 │   ├── components/
 │   │   ├── auth/            # ProtectedRoute, UsernamePicker
 │   │   ├── charts/          # Line, Bar, Radar (memoized)
@@ -251,7 +245,7 @@ Condensed from Phase 1–4 docs (original files removed; content preserved here)
 | **1 — Scaffolding** | Tooling + primitives | Vite/React/Tailwind, fonts, `ButtonRaw` / `ButtonStar` / `ButtonArcade`, cards, badges, spinners, Login + Register shells, design constraint verification |
 | **2 — Core pages** | Real layouts + charts | Dashboard (three-system collision), Profile + StatRings, Analytics (Recharts), Component Test, enhanced Spinner/empty states |
 | **3 — Interactive** | Game + forms | Full Quiz arcade flow (timer, streak, XP), Logger (study/sleep/tasks, validation, toasts), full-screen routes with exit controls |
-| **4 — API** | Backend wiring | Axios client + hooks, all pages on live FastAPI, Leaderboard + Admin built, Analytics rebuilt with real data |
+| **4 — API** | Backend wiring | Axios client + hooks, all pages on live FastAPI, Leaderboard built, Analytics with ML cognitive data |
 | **Polish** | Ship readiness | ErrorBoundary (fusion fallback), lazy routes + Suspense, level-up modal, document titles, keyboard shortcuts, chart memoization, theme system, JWT auth + protected routes, Landing + username system |
 
 ---
@@ -274,7 +268,7 @@ Condensed from Phase 1–4 docs (original files removed; content preserved here)
 ### Runtime hardening
 
 - **ErrorBoundary** at app root — fusion-styled recovery UI
-- **Loading / empty / error** states on Profile, Dashboard, Quiz, Logger, Analytics, Leaderboard, Admin
+- **Loading / empty / error** states on Profile, Dashboard, Quiz, Logger, Analytics, Leaderboard
 - **Level-up modal** when `new_level > old_level` after quiz submit (5s auto-close)
 - **Document titles** on all major pages
 
@@ -310,7 +304,7 @@ Condensed from Phase 1–4 docs (original files removed; content preserved here)
 
 ### Recommended tour (logged in)
 
-`Dashboard` → `Profile` → `Analytics` → `Quiz` (full flow) → `Logger` → `Leaderboard` → `Admin` → `/app/test`
+`Dashboard` → `Profile` → `Analytics` → `Quiz` (full flow) → `Logger` → `Leaderboard` → `/app/test`
 
 ---
 

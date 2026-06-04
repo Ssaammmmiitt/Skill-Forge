@@ -130,22 +130,26 @@ Skill-Forge/
 │   │   ├── api/             # API client
 │   │   └── utils/           # Utility functions
 │   ├── public/              # Static assets
-│   └── DESIGN.md            # Design system documentation
 │
 ├── skill_forge/data/        # Database & models
 │   ├── models.py            # SQLAlchemy models
 │   └── skill_forge.db       # SQLite database
 │
-├── engine/                  # Game mechanics
+├── engine/                  # Game mechanics + cognitive analysis
 │   ├── attributes.py        # INT/WIS/Energy calculations
 │   ├── rewards.py           # XP & leveling system
-│   └── adaptive.py          # Difficulty adjustment
+│   ├── adaptive.py          # Difficulty adjustment
+│   └── cognitive.py         # Cognitive behavior analyzer
 │
-├── models/                  # ML artifacts
-│   ├── dt_model.pkl         # Decision tree model
-│   ├── nn_model.pt          # Neural network model
-│   ├── scaler.pkl           # Feature scaler
-│   └── label_encoder.pkl    # Learning style encoder
+├── models/                  # ML training & inference
+│   ├── decision_tree.py
+│   ├── neural_net.py
+│   ├── compare.py
+│   ├── inference.py         # Ensemble runtime
+│   └── saved/               # Trained artifacts (gitignored)
+├── scripts/setup_ml.py      # One-command train + evaluate
+├── AI_REPORT.md             # ML methodology & metrics
+├── DESIGN.md                # UI design system (repo root)
 │
 ├── tests/                   # Test suite
 │   └── test_api.py          # API tests
@@ -254,9 +258,13 @@ All endpoints return a consistent envelope:
 | `GET` | `/quiz/{difficulty}` | Get quiz questions (1-10 difficulty) |
 | `POST` | `/quiz/submit` | Submit quiz answers, get results |
 | `GET` | `/leaderboard` | Get top 10 students (sort by xp/INT/WIS) |
-| `GET` | `/analytics/{id}` | Get student analytics |
-| `GET` | `/admin/metrics` | Get ML model comparison metrics |
-| `POST` | `/admin/retrain` | Retrain ML models (admin only) |
+| `GET` | `/analytics/{id}` | Performance trends + AI cognitive summary |
+| `GET` | `/cognitive/{id}` | Full ML cognitive profile & learning path |
+| `GET` | `/todos/{id}?date=YYYY-MM-DD` | Daily task list for a date |
+| `POST` | `/todos` | Add a task |
+| `PATCH` | `/todos/{todo_id}` | Update task (label, completed) |
+| `DELETE` | `/todos/{todo_id}` | Remove a task |
+| `POST` | `/todos/copy-incomplete` | Carry unfinished tasks to another day |
 
 Interactive API docs: **http://127.0.0.1:5001/docs**
 
@@ -319,16 +327,14 @@ rm skill_forge/data/skill_forge.db
 python -m api.app  # Recreates tables
 ```
 
-### ML Model Training
+### ML Model Training (required before ensemble inference)
 
 ```bash
-# Retrain models using existing session data
-# Option 1: Via API (backend must be running)
-curl -X POST http://localhost:5001/api/admin/retrain
-
-# Option 2: Direct script
-python -m models.train_models
+# From repo root — trains DT + NN and writes reports/
+python scripts/setup_ml.py
 ```
+
+See **AI_REPORT.md** for methodology, metrics, and limitations.
 
 ---
 
@@ -345,8 +351,8 @@ python -m models.train_models
 | `/app/learning-path` | Learning Path | StarChart |
 | `/app/log` | Activity Logger | RawBlock |
 | `/app/analytics` | Analytics | StarChart |
+| `/app/tasks` | Daily to-do list (per day) | RawBlock |
 | `/app/leaderboard` | Leaderboard | StarChart |
-| `/app/admin` | Admin Dashboard | RawBlock |
 
 ---
 
@@ -391,7 +397,6 @@ python -m models.train_models
 - Fixed infinite loop in achievement notification hook
 - Resolved node layering issues in Learning Path
 - Fixed CORS preflight errors (moved to port 5001)
-- Improved error handling in Admin dashboard
 
 ---
 
@@ -443,7 +448,8 @@ This project is licensed under the MIT License. See `LICENSE` file for details.
 
 - **Issues**: [GitHub Issues](https://github.com/yourusername/Skill-Forge/issues)
 - **Documentation**: See `skill_forge_ui/PROJECT_REPORT.md` for detailed frontend docs
-- **Design System**: See `DESIGN.md` for full design specification
+- **Design System**: See `DESIGN.md` (repo root) for full design specification  
+- **AI / ML**: See `AI_REPORT.md`
 
 ---
 

@@ -1,21 +1,27 @@
-import pandas as pd
-import numpy as np
-import pickle
 import os
+import pickle
+
+import numpy as np
+import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+
+from config import ML_FEATURE_NAMES, QUIZ_QUESTION_COUNT, SESSION_FEATURE_COLS
+
 
 class CustomLabelEncoder(LabelEncoder):
-    """Custom LabelEncoder subclass to enforce specific class order mappings:
-    fast_learner=0, slow_learner=1, conceptual=2, memorization=3
-    """
+    """Fixed class order: fast_learner, slow_learner, conceptual, memorization."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.classes_ = np.array(['fast_learner', 'slow_learner', 'conceptual', 'memorization'], dtype=object)
+        self.classes_ = np.array(
+            ["fast_learner", "slow_learner", "conceptual", "memorization"], dtype=object
+        )
 
     def fit(self, y):
-        # Override to keep classes fixed
-        self.classes_ = np.array(['fast_learner', 'slow_learner', 'conceptual', 'memorization'], dtype=object)
+        self.classes_ = np.array(
+            ["fast_learner", "slow_learner", "conceptual", "memorization"], dtype=object
+        )
         return self
 
     def transform(self, y):
@@ -27,50 +33,91 @@ class CustomLabelEncoder(LabelEncoder):
         return self.transform(y)
 
     def inverse_transform(self, y):
-        return np.array([self.classes_[x] for x in y])
+        return np.array([self.classes_[int(x)] for x in y])
 
-def load_and_prepare(csv_path: str):
-    """Loads CSV, performs feature engineering, encodes target labels,
-    splits data 80/20, and normalizes features using StandardScaler.
-    Returns: X_train_scaled, X_test_scaled, y_train, y_test, scaler, label_encoder
-    """
+
+def enrich_features(frame: pd.DataFrame) -> pd.DataFrame:
+    """Adds derived behavioral features used by DT and neural net."""
+    out = frame[SESSION_FEATURE_COLS].copy()
+    out["accuracy_rate"] = out["quiz_score"] / 100.0
+    out["mistake_rate"] = out["mistakes"] / float(QUIZ_QUESTION_COUNT)
+    out["time_per_question"] = out["time_taken"] / float(QUIZ_QUESTION_COUNT)
+    out["pace_index"] = out["accuracy_rate"] / np.maximum(out["time_per_question"] / 60.0, 0.05)
+    return out[ML_FEATURE_NAMES]
+
+
+def session_to_feature_row(
+    quiz_score: float,
+    time_taken: float,
+    mistakes: float,
+    difficulty: float,
+) -> np.ndarray:
+    """Single session → 1×8 feature row (before scaling)."""
+    accuracy_rate = quiz_score / 100.0
+    mistake_rate = mistakes / float(QUIZ_QUESTION_COUNT)
+    time_per_question = time_taken / float(QUIZ_QUESTION_COUNT)
+    pace_index = accuracy_rate / max(time_per_question / 60.0, 0.05)
+    return np.array(
+        [
+            [
+                quiz_score,
+                time_taken,
+                mistakes,
+                difficulty,
+                accuracy_rate,
+                mistake_rate,
+                time_per_question,
+                pace_index,
+            ]
+        ],
+        dtype=np.float64,
+    )
+
+
+def resolve_training_csv_path() -> str:
+    """Resolve training CSV (supports root `data/` symlink or skill_forge/data/)."""
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    for rel in ("data/training_data.csv", "skill_forge/data/training_data.csv"):
+        path = os.path.join(root, rel)
+        if os.path.isfile(path):
+            return path
+    raise FileNotFoundError(
+        "training_data.csv not found. Run: python skill_forge/data/generate.py"
+    )
+
+
+def load_and_prepare(csv_path: str | None = None):
+    """Load CSV, engineer features, split 80/20, fit scaler on train."""
+    csv_path = csv_path or resolve_training_csv_path()
     df = pd.read_csv(csv_path)
-    
-    # 2. Select feature columns
-    feature_cols = ['quiz_score', 'time_taken', 'mistakes', 'difficulty']
-    X = df[feature_cols].copy()
-    
-    # 3. Add derived feature
-    X['accuracy_rate'] = X['quiz_score'] / 100.0
-    
-    # 4. Encode labels
+    X = enrich_features(df)
     label_encoder = CustomLabelEncoder()
-    y = label_encoder.fit_transform(df['learning_style'])
-    
-    # 5. Split 80/20
+    y = label_encoder.fit_transform(df["learning_style"])
+
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
-    
-    # 6. Normalize with StandardScaler (fit ONLY on X_train)
+
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
-    
+
     return X_train_scaled, X_test_scaled, y_train, y_test, scaler, label_encoder
 
+
 def save_preprocessors(scaler, label_encoder):
-    """Saves scaler and label_encoder to models/saved/ using pickle."""
     os.makedirs("models/saved", exist_ok=True)
     with open("models/saved/scaler.pkl", "wb") as f:
         pickle.dump(scaler, f)
     with open("models/saved/label_encoder.pkl", "wb") as f:
         pickle.dump(label_encoder, f)
 
+
 def load_preprocessors():
-    """Loads and returns scaler and label_encoder from models/saved/."""
-    with open("models/saved/scaler.pkl", "rb") as f:
+    from config import LE_PATH, SCALER_PATH
+
+    with open(SCALER_PATH, "rb") as f:
         scaler = pickle.load(f)
-    with open("models/saved/label_encoder.pkl", "rb") as f:
+    with open(LE_PATH, "rb") as f:
         label_encoder = pickle.load(f)
     return scaler, label_encoder

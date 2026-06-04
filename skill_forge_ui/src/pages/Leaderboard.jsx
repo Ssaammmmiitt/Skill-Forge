@@ -5,6 +5,7 @@ import ButtonOffset from '../components/ui/ButtonOffset'
 import BadgeStar from '../components/ui/BadgeStar'
 import BadgeArcade from '../components/ui/BadgeArcade'
 import Spinner from '../components/ui/Spinner'
+import PageIntro from '../components/layout/PageIntro'
 
 const Leaderboard = () => {
   const user = useAuthStore(state => state.user)
@@ -67,13 +68,10 @@ const Leaderboard = () => {
     <div className="min-h-full bg-arcade-surface px-8 py-12">
       <div className="max-w-[1200px] mx-auto">
         
-        {/* HEADER */}
-        <h1 className="font-arcade text-[16px] text-space-star tracking-[4px] mb-2">
-          LEADERBOARD
-        </h1>
-        <p className="font-arcade text-[8px] text-arcade-secondary tracking-[2px] mb-8">
-          TOP PLAYERS — UPDATED IN REAL TIME
-        </p>
+        <PageIntro
+          title="LEADERBOARD"
+          purpose="See how you rank against other learners on XP, INT, or WIS. Friendly competition—your personal ML insights are still on Analytics."
+        />
 
         {/* SORT BUTTONS */}
         <div className="flex flex-wrap gap-4 mb-8">

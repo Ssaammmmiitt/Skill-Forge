@@ -24,11 +24,11 @@ const Sidebar = () => {
     { path: '/dashboard', label: 'DASHBOARD' },
     { path: '/app/profile', label: 'PROFILE' },
     { path: '/quiz', label: 'QUIZ' },
+    { path: '/app/tasks', label: 'DAILY TASKS' },
     { path: '/app/log', label: 'LOG ACTIVITY' },
     { path: '/app/path', label: 'LEARNING PATH' },
     { path: '/app/analytics', label: 'ANALYTICS' },
     { path: '/app/leaderboard', label: 'LEADERBOARD' },
-    { path: '/app/admin', label: 'ADMIN' },
   ]
 
   const isActive = (path) => {

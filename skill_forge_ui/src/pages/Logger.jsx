@@ -1,22 +1,27 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import ButtonOffset from '../components/ui/ButtonOffset'
 import { useNotifStore } from '../store/useNotifStore'
 import { useStudentStore } from '../store/useStudentStore'
 import { useAuthStore } from '../store/useAuthStore'
 import { logActivity } from '../api/student'
+import { resolveStudentId } from '../utils/resolveStudentId'
+import PageIntro from '../components/layout/PageIntro'
 
 const Logger = () => {
   const addToast = useNotifStore(state => state.addToast)
   const applyActivityResult = useStudentStore(state => state.applyActivityResult)
   const refreshStudent = useStudentStore(state => state.refreshStudent)
   const user = useAuthStore(state => state.user)
+  const studentId = resolveStudentId(user, null)
 
   const syncAfterActivity = async (result) => {
     if (result?.updated_attributes) {
       applyActivityResult(result.updated_attributes)
     }
-    if (user?.student_id) {
-      await refreshStudent(user.student_id)
+    const sid = resolveStudentId(user, null)
+    if (sid) {
+      await refreshStudent(sid)
     }
   }
 
@@ -36,13 +41,6 @@ const Logger = () => {
   const [sleepLoading, setSleepLoading] = useState(false)
   const [sleepErrorMsg, setSleepErrorMsg] = useState('')
 
-  const [tasks, setTasks] = useState([
-    { id: 1, label: 'COMPLETE PRACTICE PROBLEM SET', checked: false },
-    { id: 2, label: 'REVIEW SESSION NOTES', checked: false },
-    { id: 3, label: 'WATCH LECTURE RECAP', checked: false },
-    { id: 4, label: 'SUBMIT WRITTEN SUMMARY', checked: false },
-    { id: 5, label: 'PEER REVIEW EXCHANGE', checked: false }
-  ])
 
   const handleStudySubmit = async () => {
     const duration = parseFloat(studyDuration)
@@ -55,7 +53,7 @@ const Logger = () => {
     setStudyErrorMsg('')
     try {
       const result = await logActivity({
-        student_id: user?.student_id,
+        student_id: studentId,
         activity: 'study',
         value: duration
       })
@@ -88,7 +86,7 @@ const Logger = () => {
     setSleepErrorMsg('')
     try {
       const result = await logActivity({
-        student_id: user?.student_id,
+        student_id: studentId,
         activity: 'sleep',
         value: hours
       })
@@ -109,53 +107,21 @@ const Logger = () => {
     }
   }
 
-  const handleTasksSubmit = async () => {
-    const checkedCount = tasks.filter(t => t.checked).length
-    if (checkedCount === 0) return
-
-    try {
-      const result = await logActivity({
-        student_id: user?.student_id,
-        activity: 'task_done',
-        value: checkedCount
-      })
-      
-      await syncAfterActivity(result)
-      const wisGain = result.delta?.WIS || 0
-      addToast({
-        message: `+${wisGain} WIS`,
-        type: 'info'
-      })
-
-      setTasks(tasks.map(t => ({ ...t, checked: false })))
-    } catch (err) {
-      addToast({
-        message: `FAILED — ${err.message}`,
-        type: 'error'
-      })
-    }
-  }
-
-  const toggleTask = (id) => {
-    setTasks(tasks.map(t => t.id === id ? { ...t, checked: !t.checked } : t))
-  }
-
-  const checkedCount = tasks.filter(t => t.checked).length
   const studyDelta = studyDuration > 0 ? Math.round(parseFloat(studyDuration) * 0.4) : 0
   const sleepDelta = sleepHours > 0 ? Math.min(100, Math.round(parseFloat(sleepHours) * 12)) : 0
 
   return (
     <div className="min-h-screen bg-raw-bg p-6">
       <div className="max-w-3xl mx-auto">
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="font-raw text-raw-text text-[32px] uppercase tracking-[2px] mb-2">
-            LOG ACTIVITY
-          </h1>
-          <p className="font-mono text-raw-text-secondary text-[13px] tracking-[1px]">
-            RECORD YOUR REAL-WORLD ACTIONS
-          </p>
-        </div>
+        <PageIntro
+          title="LOG ACTIVITY"
+          purpose="Record study, sleep, and tasks outside quizzes. These update INT, WIS, and Energy—which also feed your Learning Path skills."
+          steps={[
+            'Study minutes → INT',
+            'Sleep hours → Energy',
+            'Completed tasks → WIS',
+          ]}
+        />
 
         <div className="space-y-6">
           {/* Section 1: Study */}
@@ -289,52 +255,19 @@ const Logger = () => {
             </div>
           </div>
 
-          {/* Section 3: Tasks */}
           <div className="border-[3px] border-raw-border bg-raw-surface p-6" style={{ borderRadius: '0px' }}>
             <div className="flex items-center gap-3 mb-4">
               <div className="font-raw text-[20px] text-raw-text-secondary">03</div>
               <h2 className="font-raw text-[20px] text-raw-text uppercase tracking-[1px]">
-                TASKS COMPLETED
+                DAILY TASKS
               </h2>
             </div>
-
-            <div className="space-y-2 mb-4">
-              {tasks.map((task) => (
-                <div
-                  key={task.id}
-                  onClick={() => toggleTask(task.id)}
-                  className="border-b-[2px] border-raw-border py-3 flex items-center gap-3 cursor-pointer hover:bg-raw-hover"
-                >
-                  <div
-                    className={`w-4 h-4 border-[2px] border-raw-border flex items-center justify-center ${
-                      task.checked ? 'bg-raw-border' : 'bg-raw-bg'
-                    }`}
-                    style={{ borderRadius: '0px' }}
-                  >
-                    {task.checked && (
-                      <span className="font-raw text-raw-bg text-[10px]">✓</span>
-                    )}
-                  </div>
-                  <label className="font-raw text-raw-text text-[11px] uppercase tracking-[1px] cursor-pointer">
-                    {task.label}
-                  </label>
-                </div>
-              ))}
-            </div>
-
-            <div className="font-mono text-raw-text-secondary text-[12px] mb-3">
-              TASKS COMPLETED: {checkedCount} / 5
-            </div>
-
-            {checkedCount > 0 && (
-              <div className="font-raw text-[18px] text-raw-text uppercase mb-4">
-                +{checkedCount * 5} WISDOM
-              </div>
-            )}
-
-            <ButtonOffset size="md" className="mt-2" onClick={handleTasksSubmit}>
-              LOG TASKS
-            </ButtonOffset>
+            <p className="font-mono text-[12px] text-raw-text-secondary leading-relaxed mb-4">
+              Custom to-do lists live on a separate page — one list per day, your own labels.
+            </p>
+            <Link to="/app/tasks">
+              <ButtonOffset size="md">OPEN DAILY TASKS →</ButtonOffset>
+            </Link>
           </div>
         </div>
       </div>

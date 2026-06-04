@@ -204,9 +204,41 @@ def test_analytics_empty_student(client):
     assert res_data["data"]["consistency_score"] == 0.0
 
 
-def test_admin_metrics_no_csv(client):
-    response = client.get("/api/admin/metrics")
-    assert response.status_code in [200, 503]
+def test_daily_todos_crud(client):
+    task_date = "2026-06-04"
+    create = client.post(
+        "/api/todos",
+        json={
+            "student_id": "fixture_id",
+            "task_date": task_date,
+            "label": "Read chapter 3",
+        },
+    )
+    assert create.status_code == 200
+    todo_id = create.json()["data"]["todo_id"]
+
+    listing = client.get(f"/api/todos/fixture_id?date={task_date}")
+    assert listing.status_code == 200
+    assert listing.json()["data"]["total"] >= 1
+
+    patch = client.patch(
+        f"/api/todos/{todo_id}",
+        json={"completed": True},
+    )
+    assert patch.status_code == 200
+    assert patch.json()["data"]["completed"] is True
+
+
+def test_cognitive_profile(client):
+    response = client.get("/api/cognitive/fixture_id")
+    assert response.status_code == 200
+    res_data = response.json()
+    assert res_data["error"] is None
+    data = res_data["data"]
+    assert "learning_style" in data
+    assert "behavioral" in data
+    assert "learning_path" in data
+    assert "confidence" in data
 
 
 def test_username_suggestions(client):

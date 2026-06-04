@@ -12,10 +12,10 @@ const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Profile = lazy(() => import('./pages/Profile'))
 const Quiz = lazy(() => import('./pages/Quiz'))
 const Logger = lazy(() => import('./pages/Logger'))
+const DailyTasks = lazy(() => import('./pages/DailyTasks'))
 const LearningPath = lazy(() => import('./pages/LearningPath'))
 const Analytics = lazy(() => import('./pages/Analytics'))
 const Leaderboard = lazy(() => import('./pages/Leaderboard'))
-const Admin = lazy(() => import('./pages/Admin'))
 const ComponentTest = lazy(() => import('./pages/ComponentTest'))
 
 const routerFutureFlags = {
@@ -45,21 +45,20 @@ function App() {
               <Route path="/quiz" element={<Quiz />} />
               <Route path="/analytics" element={<Navigate to="/app/analytics" replace />} />
               <Route path="/log" element={<Navigate to="/app/log" replace />} />
+              <Route path="/tasks" element={<Navigate to="/app/tasks" replace />} />
               <Route path="/profile" element={<Navigate to="/app/profile" replace />} />
               <Route path="/leaderboard" element={<Navigate to="/app/leaderboard" replace />} />
               <Route path="/path" element={<Navigate to="/app/path" replace />} />
-              <Route path="/admin" element={<Navigate to="/app/admin" replace />} />
-
               <Route path="/dashboard" element={<AppLayout />}>
                 <Route index element={<Dashboard />} />
               </Route>
               <Route path="/app" element={<AppLayout />}>
                 <Route path="profile" element={<Profile />} />
                 <Route path="log" element={<Logger />} />
+                <Route path="tasks" element={<DailyTasks />} />
                 <Route path="path" element={<LearningPath />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="leaderboard" element={<Leaderboard />} />
-                <Route path="admin" element={<Admin />} />
                 <Route path="test" element={<ComponentTest />} />
               </Route>
             </Route>

@@ -13,14 +13,16 @@ import seaborn as sns
 # Ensure the root of the project is in python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from config import ML_FEATURE_NAMES
 from models.features import load_and_prepare
 
 class SkillForgeNet(nn.Module):
     """3-layer PyTorch MLP classifier for student learning styles (needed for model reconstruction)."""
-    def __init__(self):
+    def __init__(self, input_dim: int | None = None):
         super().__init__()
+        input_dim = input_dim or len(ML_FEATURE_NAMES)
         self.layer1 = nn.Sequential(
-            nn.Linear(5, 64),
+            nn.Linear(input_dim, 64),
             nn.BatchNorm1d(64),
             nn.ReLU(),
             nn.Dropout(0.3)
@@ -41,7 +43,7 @@ class SkillForgeNet(nn.Module):
 
 def main():
     # 1. LOAD EVERYTHING
-    X_train, X_test, y_train, y_test, scaler, label_encoder = load_and_prepare("data/training_data.csv")
+    X_train, X_test, y_train, y_test, scaler, label_encoder = load_and_prepare()
     
     # Load Decision Tree
     with open("models/saved/dt_model.pkl", "rb") as f:

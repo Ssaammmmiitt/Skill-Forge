@@ -36,8 +36,7 @@ Required game endpoints:
 - POST /api/quiz/submit            body: {student_id, answers[]}
 - GET  /api/leaderboard
 - GET  /api/analytics/<id>
-- GET  /api/admin/metrics
-- POST /api/admin/retrain
+- GET  /api/cognitive/{student_id}
 
 ## Verification checklist
 - [ ] curl http://localhost:5000/api/student/<id> returns JSON (not HTML)

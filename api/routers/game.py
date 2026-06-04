@@ -1,14 +1,9 @@
 import dataclasses
-import os
-import pickle
 import random
-import subprocess
-import sys
 import uuid
 from datetime import datetime, timezone
 
 import numpy as np
-import pandas as pd
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
@@ -23,66 +18,26 @@ from data.models import (
 )
 from engine.adaptive import adjust_difficulty
 from engine.attributes import get_attribute_delta, update_attributes
+from engine.cognitive import build_cognitive_profile
 from engine.rewards import award_xp, update_streak
+
+from api.data.questions import QUESTIONS_BY_LEVEL, QUIZ_QUESTIONS_PER_SESSION
 
 router = APIRouter(prefix="/api", tags=["game"])
 
-QUESTION_BANK = {
-    1: [
-        {"id": "q1", "question": "What is 2+2?", "options": ["3", "4", "5", "6"], "correct_index": 1, "topic": "mathematics"},
-        {"id": "q2", "question": "What color is the sky?", "options": ["red", "blue", "green", "yellow"], "correct_index": 1, "topic": "geography"},
-        {"id": "q3", "question": "How many sides does a triangle have?", "options": ["2", "3", "4", "5"], "correct_index": 1, "topic": "mathematics"},
-        {"id": "q4", "question": "What is the capital of France?", "options": ["Berlin", "Madrid", "Paris", "Rome"], "correct_index": 2, "topic": "geography"},
-        {"id": "q5", "question": "What is H2O?", "options": ["Air", "Water", "Fire", "Earth"], "correct_index": 1, "topic": "chemistry"},
-    ],
-    5: [
-        {"id": "q6", "question": "What is the capital of Italy?", "options": ["Rome", "Venice", "Milan", "Florence"], "correct_index": 0, "topic": "geography"},
-        {"id": "q7", "question": "Which planet is known as the Red Planet?", "options": ["Earth", "Mars", "Venus", "Jupiter"], "correct_index": 1, "topic": "geography"},
-        {"id": "q8", "question": "What is 5 * 6?", "options": ["25", "30", "35", "40"], "correct_index": 1, "topic": "mathematics"},
-        {"id": "q9", "question": "Who wrote 'Romeo and Juliet'?", "options": ["Shakespeare", "Dickens", "Hemingway", "Tolkien"], "correct_index": 0, "topic": "literature"},
-        {"id": "q10", "question": "What is the chemical symbol for Gold?", "options": ["Ag", "Fe", "Au", "Pb"], "correct_index": 2, "topic": "chemistry"},
-    ],
-    10: [
-        {"id": "q11", "question": "What is the derivative of x^2?", "options": ["x", "2", "2x", "x^2"], "correct_index": 2, "topic": "mathematics"},
-        {"id": "q12", "question": "What is the speed of light?", "options": ["300,000 km/s", "150,000 km/s", "450,000 km/s", "600,000 km/s"], "correct_index": 0, "topic": "physics"},
-        {"id": "q13", "question": "Who formulated the general theory of relativity?", "options": ["Newton", "Galileo", "Einstein", "Hawking"], "correct_index": 2, "topic": "physics"},
-        {"id": "q14", "question": "What is the capital of Australia?", "options": ["Sydney", "Melbourne", "Canberra", "Brisbane"], "correct_index": 2, "topic": "geography"},
-        {"id": "q15", "question": "What is the powerhouse of the cell?", "options": ["Nucleus", "Mitochondria", "Ribosome", "Lysosome"], "correct_index": 1, "topic": "biology"},
-    ],
-}
 
-DT_MODEL_PATH = "models/saved/dt_model.pkl"
-SCALER_PATH = "models/saved/scaler.pkl"
-LE_PATH = "models/saved/label_encoder.pkl"
-
-clf = None
-scaler = None
-label_encoder = None
-
-
-def load_ml_models():
-    global clf, scaler, label_encoder
-    try:
-        from models.features import CustomLabelEncoder  # noqa: F401
-
-        if os.path.exists(DT_MODEL_PATH):
-            with open(DT_MODEL_PATH, "rb") as f:
-                clf = pickle.load(f)
-        if os.path.exists(SCALER_PATH):
-            with open(SCALER_PATH, "rb") as f:
-                scaler = pickle.load(f)
-        if os.path.exists(LE_PATH):
-            with open(LE_PATH, "rb") as f:
-                label_encoder = pickle.load(f)
-    except Exception as e:
-        print(f"Warning: Could not load ML models globally: {e}")
-
-
-load_ml_models()
+def _difficulty_to_level(difficulty: int) -> int:
+    if difficulty <= 3:
+        return 1
+    if difficulty <= 7:
+        return 5
+    return 10
 
 
 def prepare_shuffled_questions(level):
-    original_qs = QUESTION_BANK[level]
+    pool = list(QUESTIONS_BY_LEVEL[level])
+    count = min(QUIZ_QUESTIONS_PER_SESSION, len(pool))
+    original_qs = random.sample(pool, count)
     shuffled_qs = []
     for q in original_qs:
         copied_q = dict(q)
@@ -108,12 +63,32 @@ class QuizSubmitBody(BaseModel):
     time_taken: int | None = None
 
 
+def _student_attributes(student) -> dict:
+    return {
+        "logic": student.INT,
+        "memory": min(100, round(student.INT * 0.55 + student.WIS * 0.25)),
+        "attention": student.energy,
+        "comprehension": student.WIS,
+        "problem_solving": min(100, round((student.INT + student.WIS) / 2)),
+        "wisdom": student.WIS,
+    }
+
+
 @router.get("/student/{student_id}")
 def get_student(student_id: str, conn: DbConn):
     student = get_student_by_id(conn, student_id)
     if student is None:
         return error("Student not found", 404)
-    return success(dataclasses.asdict(student))
+
+    sessions = get_sessions_by_student(conn, student_id)
+    profile = build_cognitive_profile(student, sessions)
+    payload = dataclasses.asdict(student)
+    payload["suggested_difficulty"] = profile["suggested_difficulty"]
+    payload["sessions_completed"] = len(sessions)
+    payload["attributes"] = _student_attributes(student)
+    payload["learning_path"] = profile["learning_path"]
+    payload["learning_style"] = profile["learning_style"]
+    return success(payload)
 
 
 @router.post("/student/log-activity")
@@ -155,15 +130,9 @@ def get_quiz(difficulty: int):
     if difficulty < 1 or difficulty > 10:
         return error("Difficulty must be between 1 and 10", 400)
 
-    if difficulty <= 3:
-        level = 1
-    elif difficulty <= 7:
-        level = 5
-    else:
-        level = 10
-
+    level = _difficulty_to_level(difficulty)
     questions = prepare_shuffled_questions(level)
-    return success({"questions": questions})
+    return success({"questions": questions, "difficulty": difficulty})
 
 
 @router.post("/quiz/submit")
@@ -246,13 +215,16 @@ def submit_quiz(body: QuizSubmitBody, conn: DbConn):
     recent_sorted = sorted(recent, key=lambda s: s.timestamp, reverse=True)
     new_difficulty = adjust_difficulty(recent_sorted, difficulty)
 
-    if clf is not None and scaler is not None and label_encoder is not None:
-        raw_features = np.array(
-            [[score, time_taken, mistakes, difficulty, score / 100.0]]
-        )
-        scaled_features = scaler.transform(raw_features)
-        pred_class = clf.predict(scaled_features)[0]
-        student.learning_style = label_encoder.inverse_transform([pred_class])[0]
+    cognitive = build_cognitive_profile(
+        student,
+        recent,
+        latest_score=score,
+        latest_time_taken=time_taken,
+        latest_mistakes=mistakes,
+        latest_difficulty=new_difficulty,
+        quiz_answers=body.answers,
+    )
+    student.learning_style = cognitive["learning_style"]
 
     update_student(conn, student)
     conn.commit()
@@ -265,9 +237,29 @@ def submit_quiz(body: QuizSubmitBody, conn: DbConn):
             "new_level": student.level,
             "new_difficulty": new_difficulty,
             "learning_style": student.learning_style,
+            "learning_path": cognitive["learning_path"],
+            "cognitive": {
+                "confidence": cognitive["confidence"],
+                "model_agreement": cognitive["model_agreement"],
+                "predictions": cognitive["predictions"],
+                "explanations": cognitive["explanations"],
+                "probabilities": cognitive["probabilities"],
+                "behavioral": cognitive["behavioral"],
+            },
             "student": dataclasses.asdict(student),
         }
     )
+
+
+@router.get("/cognitive/{student_id}")
+def get_cognitive_profile(student_id: str, conn: DbConn):
+    student = get_student_by_id(conn, student_id)
+    if student is None:
+        return error("Student not found", 404)
+
+    sessions = get_sessions_by_student(conn, student_id)
+    profile = build_cognitive_profile(student, sessions)
+    return success(profile)
 
 
 @router.get("/leaderboard")
@@ -305,6 +297,7 @@ def get_analytics(student_id: str, conn: DbConn):
         return error("Student not found", 404)
 
     sessions = get_sessions_by_student(conn, student_id)
+    cognitive = build_cognitive_profile(student, sessions)
 
     if len(sessions) < 2:
         return success(
@@ -312,19 +305,19 @@ def get_analytics(student_id: str, conn: DbConn):
                 "score_trend": [],
                 "difficulty_trend": [],
                 "time_trend": [],
-                "style_history": {
-                    "fast_learner": 0,
-                    "slow_learner": 0,
-                    "conceptual": 0,
-                    "memorization": 0,
-                },
-                "consistency_score": 0.0,
+                "style_history": cognitive["style_history"],
+                "consistency_score": cognitive["behavioral"]["consistency_score"],
                 "radar": {
                     "INT": student.INT,
                     "WIS": student.WIS,
                     "energy": student.energy,
                     "xp_normalized": min(100, student.xp // 10),
                     "level_normalized": min(100, student.level * 10),
+                },
+                "cognitive_summary": {
+                    "learning_style": cognitive["learning_style"],
+                    "confidence": cognitive["confidence"],
+                    "pace_score": cognitive["behavioral"]["pace_score"],
                 },
             }
         )
@@ -335,43 +328,14 @@ def get_analytics(student_id: str, conn: DbConn):
     difficulty_trend = [s.difficulty for s in sessions_sorted[-10:]]
     time_trend = [s.time_taken for s in sessions_sorted[-10:]]
 
-    style_history = {
-        "fast_learner": 0,
-        "slow_learner": 0,
-        "conceptual": 0,
-        "memorization": 0,
-    }
-    if clf is not None and scaler is not None and label_encoder is not None:
-        for s in sessions:
-            raw = np.array(
-                [
-                    [
-                        s.quiz_score,
-                        s.time_taken,
-                        s.mistakes,
-                        s.difficulty,
-                        s.quiz_score / 100.0,
-                    ]
-                ]
-            )
-            scaled = scaler.transform(raw)
-            pred_class = clf.predict(scaled)[0]
-            pred_style = label_encoder.inverse_transform([pred_class])[0]
-            if pred_style in style_history:
-                style_history[pred_style] += 1
-    else:
-        style_history[student.learning_style] = len(sessions)
-
-    last_5_scores = [s.quiz_score for s in sessions_sorted[-5:]]
-    std_dev = np.std(last_5_scores) if len(last_5_scores) >= 2 else 0.0
-    consistency_score = float(min(100.0, max(0.0, 100.0 - std_dev)))
-
     radar = {
         "INT": student.INT,
         "WIS": student.WIS,
         "energy": student.energy,
         "xp_normalized": min(100, student.xp // 10),
         "level_normalized": min(100, student.level * 10),
+        "pace_score": int(cognitive["behavioral"]["pace_score"]),
+        "consistency_score": int(cognitive["behavioral"]["consistency_score"]),
     }
 
     return success(
@@ -379,47 +343,19 @@ def get_analytics(student_id: str, conn: DbConn):
             "score_trend": score_trend,
             "difficulty_trend": difficulty_trend,
             "time_trend": time_trend,
-            "style_history": style_history,
-            "consistency_score": round(consistency_score, 2),
+            "style_history": cognitive["style_history"],
+            "consistency_score": cognitive["behavioral"]["consistency_score"],
             "radar": radar,
-        }
-    )
-
-
-@router.get("/admin/metrics")
-def get_metrics():
-    csv_path = "reports/model_comparison.csv"
-    if not os.path.exists(csv_path):
-        return error("Models not yet evaluated — run models/compare.py", 503)
-
-    df = pd.read_csv(csv_path)
-    
-    # Transform CSV structure to match frontend expectations
-    metrics_dict = {}
-    for _, row in df.iterrows():
-        model_name = str(row['Model']).lower().replace(' ', '_')
-        metrics_dict[model_name] = {
-            'accuracy': float(row['Accuracy']),
-            'precision': float(row['Precision_Macro']),
-            'recall': float(row['Recall_Macro']),
-            'f1_score': float(row['F1_Macro'])
-        }
-    
-    return success(metrics_dict)
-
-
-@router.post("/admin/retrain")
-def retrain_models():
-    cmd = (
-        f"{sys.executable} models/decision_tree.py && "
-        f"{sys.executable} models/neural_net.py && "
-        f"{sys.executable} models/compare.py"
-    )
-    subprocess.Popen(cmd, shell=True)
-
-    return success(
-        {
-            "status": "retrain_started",
-            "message": "Model retraining and evaluation pipeline initiated in the background.",
+            "cognitive_summary": {
+                "learning_style": cognitive["learning_style"],
+                "confidence": cognitive["confidence"],
+                "model_agreement": cognitive["model_agreement"],
+                "explanations": cognitive["explanations"],
+                "probabilities": cognitive["probabilities"],
+                "topic_weakness": cognitive["behavioral"]["topic_weakness"],
+                "pace_score": cognitive["behavioral"]["pace_score"],
+                "score_velocity": cognitive["behavioral"]["score_velocity"],
+            },
+            "learning_path": cognitive["learning_path"],
         }
     )

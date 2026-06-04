@@ -1,141 +1,45 @@
-import { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useStudent } from '../hooks/useStudent'
+import PageIntro from '../components/layout/PageIntro'
 import CardStar from '../components/ui/CardStar'
 import BadgeStar from '../components/ui/BadgeStar'
 import ProgressStar from '../components/ui/ProgressStar'
+import ButtonStar from '../components/ui/ButtonStar'
 import Spinner from '../components/ui/Spinner'
-import TutorialOverlay from '../components/learningPath/TutorialOverlay'
-import SkillRecommendations from '../components/learningPath/SkillRecommendations'
-import AchievementNotification, { useAchievements } from '../components/learningPath/AchievementNotification'
+import {
+  SKILL_TREE,
+  getAllSkills,
+  getSkillMastery,
+  getSkillStatus,
+  buildAttributesFromStudent,
+  SKILL_DESCRIPTIONS,
+} from '../utils/learningPathSkills'
 
-// Skill tree data structure with improved spacing
-const SKILL_TREE = {
-  foundation: {
-    id: 'foundation',
-    name: 'Foundation',
-    skills: [
-      { id: 'logic', name: 'Logical Reasoning', category: 'LOG', icon: '🧩', x: 40, y: 80, z: 0 },
-      { id: 'memory', name: 'Memory', category: 'MEM', icon: '🧠', x: 160, y: 80, z: -20 },
-      { id: 'attention', name: 'Attention', category: 'ATT', icon: '👁️', x: 280, y: 80, z: 0 },
-    ]
-  },
-  intermediate: {
-    id: 'intermediate',
-    name: 'Intermediate',
-    skills: [
-      { id: 'comprehension', name: 'Comprehension', category: 'COM', icon: '📖', x: 90, y: 230, z: 10 },
-      { id: 'problem_solving', name: 'Problem Solving', category: 'LOG', icon: '🎯', x: 230, y: 230, z: -10 },
-    ]
-  },
-  advanced: {
-    id: 'advanced',
-    name: 'Advanced',
-    skills: [
-      { id: 'wisdom', name: 'Wisdom', category: 'WIS', icon: '🌟', x: 160, y: 370, z: 0 },
-    ]
-  }
+const STATUS_COLORS = {
+  mastered: '#FDE047',
+  learning: '#A78BFA',
+  started: '#60A5FA',
+  locked: '#4B4876',
 }
 
-const CONNECTIONS = [
-  { from: 'logic', to: 'problem_solving' },
-  { from: 'memory', to: 'comprehension' },
-  { from: 'memory', to: 'problem_solving' },
-  { from: 'attention', to: 'problem_solving' },
-  { from: 'comprehension', to: 'wisdom' },
-  { from: 'problem_solving', to: 'wisdom' },
-]
-
-const LearningPathEnhanced = () => {
-  const { student, loading, error } = useStudent()
-  const [selectedSkill, setSelectedSkill] = useState(null)
-  const [hoveredSkill, setHoveredSkill] = useState(null)
-  const [view3D, setView3D] = useState(false)
-  const [rotation, setRotation] = useState({ x: 0, y: 0 })
-  const [unlockedSkills, setUnlockedSkills] = useState(new Set())
-  const svgRef = useRef(null)
+const LearningPath = () => {
+  const { student, loading, error, refetch } = useStudent()
+  const [selectedId, setSelectedId] = useState(null)
 
   useEffect(() => {
     document.title = 'SKILL FORGE // LEARNING PATH'
   }, [])
 
-  const allSkills = Object.values(SKILL_TREE).flatMap(tier => tier.skills)
+  const allSkills = getAllSkills()
+  const attrs = buildAttributesFromStudent(student)
+  const avgMastery =
+    allSkills.length > 0
+      ? allSkills.reduce((sum, s) => sum + getSkillMastery(student, s.id), 0) / allSkills.length
+      : 0
 
-  const getSkillMastery = (skillId) => {
-    if (!student?.attributes) return 0
-    
-    const skill = allSkills.find(s => s.id === skillId)
-    if (!skill) return 0
-
-    const categoryMap = {
-      'LOG': 'logic',
-      'MEM': 'memory',
-      'ATT': 'attention',
-      'COM': 'comprehension',
-      'WIS': 'wisdom'
-    }
-
-    const attr = categoryMap[skill.category]
-    return student.attributes[attr] || 0
-  }
-
-  const getSkillStatus = (skillId) => {
-    const mastery = getSkillMastery(skillId)
-    if (mastery >= 80) return 'mastered'
-    if (mastery >= 50) return 'learning'
-    if (mastery > 0) return 'started'
-    return 'locked'
-  }
-
-  const getSkillColor = (status) => {
-    switch (status) {
-      case 'mastered': return '#FDE047'
-      case 'learning': return '#A78BFA'
-      case 'started': return '#60A5FA'
-      case 'locked': return '#4B4876'
-      default: return '#4B4876'
-    }
-  }
-
-  // Achievement tracking
-  const { achievements, removeAchievement } = useAchievements(allSkills, getSkillMastery, getSkillStatus)
-
-  // Track newly unlocked skills for animations
-  useEffect(() => {
-    if (!student) return
-
-    const currentUnlocked = new Set()
-    allSkills.forEach(skill => {
-      const status = getSkillStatus(skill.id)
-      if (status !== 'locked') {
-        currentUnlocked.add(skill.id)
-      }
-    })
-
-    // Find newly unlocked skills
-    const newlyUnlocked = [...currentUnlocked].filter(id => !unlockedSkills.has(id))
-    if (newlyUnlocked.length > 0 && unlockedSkills.size > 0) {
-      // Trigger unlock animation
-      newlyUnlocked.forEach(id => {
-        console.log(`Skill unlocked: ${id}`)
-      })
-    }
-
-    setUnlockedSkills(currentUnlocked)
-  }, [student, allSkills])
-
-  const handleSkillClick = (skill) => {
-    setSelectedSkill(selectedSkill?.id === skill.id ? null : skill)
-  }
-
-  // 3D rotation effect on mouse move
-  const handleMouseMove = (e) => {
-    if (!view3D || !svgRef.current) return
-    const rect = svgRef.current.getBoundingClientRect()
-    const x = (e.clientX - rect.left) / rect.width - 0.5
-    const y = (e.clientY - rect.top) / rect.height - 0.5
-    setRotation({ x: y * 20, y: x * 20 })
-  }
+  const selected = allSkills.find((s) => s.id === selectedId)
+  const pathFocus = student?.learning_path?.focus || 'Complete quizzes to unlock personalized guidance.'
 
   if (loading) {
     return (
@@ -147,486 +51,159 @@ const LearningPathEnhanced = () => {
 
   if (error) {
     return (
-      <div className="min-h-full bg-space-deep px-8">
-        <div className="p-6 border-2 border-space-error rounded-xl mt-10">
-          <div className="font-space text-space-error text-lg">ERROR</div>
-          <div className="font-body-space text-space-error text-sm mt-2">{error}</div>
-        </div>
+      <div className="min-h-full bg-space-deep px-8 py-10">
+        <PageIntro
+          title="LEARNING PATH"
+          purpose="See how your INT, WIS, and Energy map to cognitive skills, and what to practice next."
+        />
+        <p className="font-body-space text-space-error text-sm">{error}</p>
+        <ButtonStar className="mt-4" onClick={refetch}>
+          Retry
+        </ButtonStar>
       </div>
     )
   }
 
   if (!student) {
     return (
-      <div className="min-h-full bg-space-deep flex items-center justify-center">
-        <p className="font-body-space text-space-nebula text-sm">No student data available</p>
+      <div className="min-h-full bg-space-deep px-8 py-10">
+        <p className="font-body-space text-space-nebula text-sm">Loading your profile…</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-full bg-space-deep">
-      {/* Tutorial Overlay */}
-      <TutorialOverlay />
+    <div className="min-h-full bg-space-deep px-8 py-10">
+      <div className="max-w-5xl mx-auto">
+        <PageIntro
+          title="LEARNING PATH"
+          purpose="This is your skill roadmap—not a separate game. Progress comes from your real stats (INT, WIS, Energy) and quiz history. The AI suggests what to focus on next."
+          steps={[
+            'Higher INT → logic & problem-solving',
+            'Higher WIS → comprehension & wisdom',
+            'Higher Energy → attention & consistency',
+            'Take quizzes to move skills from Locked → Mastered',
+          ]}
+        />
 
-      {/* Achievement Notifications */}
-      <AnimatePresence>
-        {achievements.map((achievement, index) => (
-          <AchievementNotification
-            key={index}
-            achievement={achievement}
-            onClose={() => removeAchievement(index)}
-          />
-        ))}
-      </AnimatePresence>
-
-      {/* HEADER */}
-      <div className="px-8 py-10">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div>
-            <h1 className="font-space text-[42px] leading-tight text-space-star mb-3">
-              LEARNING PATH
-            </h1>
-            <p className="font-body-space text-space-text text-base leading-relaxed max-w-3xl">
-              Your journey through the cognitive skill universe. Each constellation represents a mastery level.
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <CardStar>
+            <p className="font-body-space text-xs text-space-text-secondary mb-1">Average mastery</p>
+            <p className="font-space text-2xl text-space-star">{Math.round(avgMastery)}%</p>
+            <ProgressStar value={avgMastery} className="mt-2" />
+          </CardStar>
+          <CardStar>
+            <p className="font-body-space text-xs text-space-text-secondary mb-1">Quizzes completed</p>
+            <p className="font-space text-2xl text-space-nebula">{student.sessions_completed ?? 0}</p>
+          </CardStar>
+          <CardStar>
+            <p className="font-body-space text-xs text-space-text-secondary mb-1">Learning style (ML)</p>
+            <p className="font-space text-lg text-space-star capitalize">
+              {(student.learning_style || 'unknown').replace(/_/g, ' ')}
             </p>
-          </div>
-          
-          {/* 3D View Toggle */}
-          <button
-            onClick={() => setView3D(!view3D)}
-            className={`
-              px-6 py-3 rounded-pill font-body-space text-sm font-semibold transition-all duration-300
-              ${view3D 
-                ? 'bg-space-star text-space-deep shadow-lg' 
-                : 'bg-space-surface border-2 border-space-nebula text-space-nebula hover:bg-space-overlay'
-              }
-            `}
-          >
-            {view3D ? '2D View' : '3D View'}
-          </button>
+          </CardStar>
+        </div>
+
+        <CardStar className="mb-8 border border-space-nebula/30">
+          <h3 className="font-space text-lg text-space-star mb-2">AI recommendation</h3>
+          <p className="font-body-space text-sm text-space-nebula leading-relaxed">{pathFocus}</p>
+          {student.learning_path?.task_types?.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {student.learning_path.task_types.map((t) => (
+                <BadgeStar key={t} status="learning">
+                  {t.replace(/_/g, ' ')}
+                </BadgeStar>
+              ))}
+            </div>
+          )}
+          <Link to="/quiz" className="inline-block mt-4">
+            <ButtonStar size="sm">Take a quiz →</ButtonStar>
+          </Link>
+        </CardStar>
+
+        {SKILL_TREE.map((tier) => (
+          <section key={tier.tier} className="mb-10">
+            <h2 className="font-space text-xl text-space-nebula mb-4">{tier.tier}</h2>
+            <div className="space-y-3">
+              {tier.skills.map((skill) => {
+                const mastery = getSkillMastery(student, skill.id)
+                const status = getSkillStatus(mastery)
+                const isSelected = selectedId === skill.id
+                return (
+                  <button
+                    key={skill.id}
+                    type="button"
+                    onClick={() => setSelectedId(skill.id)}
+                    className={`w-full text-left rounded-xl p-4 transition-colors border-2 ${
+                      isSelected
+                        ? 'border-space-star bg-space-overlay'
+                        : 'border-transparent bg-space-sunken hover:bg-space-overlay'
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <span className="text-3xl" aria-hidden>
+                        {skill.icon}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="font-space text-base text-raw-white">{skill.name}</span>
+                          <BadgeStar status={status === 'locked' ? 'locked' : status}>
+                            {status}
+                          </BadgeStar>
+                        </div>
+                        <ProgressStar value={mastery} />
+                        <p className="font-mono text-xs text-space-text-secondary mt-1">
+                          {mastery}% · tied to {skill.attr.replace('_', ' ')}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </section>
+        ))}
+
+        <CardStar variant="achievement">
+          {selected ? (
+            <div>
+              <div className="text-4xl mb-2">{selected.icon}</div>
+              <h3 className="font-space text-xl text-space-star mb-2">{selected.name}</h3>
+              <p className="font-body-space text-sm text-space-nebula mb-4">
+                {SKILL_DESCRIPTIONS[selected.id]}
+              </p>
+              <p className="font-body-space text-xs text-space-text-secondary">
+                Current value: {attrs[selected.attr] ?? 0}/100 (from your live attributes)
+              </p>
+            </div>
+          ) : (
+            <p className="font-body-space text-sm text-space-text-secondary text-center py-4">
+              Select a skill above to read how it connects to your stats.
+            </p>
+          )}
+        </CardStar>
+
+        <div className="flex flex-wrap gap-4 mt-6 text-xs font-body-space text-space-text-secondary">
+          <span>
+            <span className="inline-block w-3 h-3 rounded-full mr-1" style={{ background: STATUS_COLORS.mastered }} />
+            Mastered 80%+
+          </span>
+          <span>
+            <span className="inline-block w-3 h-3 rounded-full mr-1" style={{ background: STATUS_COLORS.learning }} />
+            Learning 50%+
+          </span>
+          <span>
+            <span className="inline-block w-3 h-3 rounded-full mr-1" style={{ background: STATUS_COLORS.started }} />
+            Started
+          </span>
+          <span>
+            <span className="inline-block w-3 h-3 rounded-full mr-1" style={{ background: STATUS_COLORS.locked }} />
+            Locked (0%)
+          </span>
         </div>
       </div>
-
-      {!loading && !error && student && (
-        <div className="px-8 pb-16">
-          {/* OVERALL PROGRESS */}
-          <div className="mb-10 max-w-7xl mx-auto">
-            <CardStar variant="default">
-              <h3 className="font-space text-[20px] text-space-nebula mb-4">
-                OVERALL MASTERY
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <div className="font-body-space text-space-text-secondary text-sm mb-2">
-                    Cognitive Attributes
-                  </div>
-                  <ProgressStar 
-                    value={
-                      Object.values(student.attributes || {})
-                        .reduce((sum, val) => sum + val, 0) / 
-                      Object.keys(student.attributes || {}).length
-                    } 
-                  />
-                </div>
-                <div>
-                  <div className="font-body-space text-space-text-secondary text-sm mb-2">
-                    Sessions Completed
-                  </div>
-                  <div className="font-space text-[24px] text-space-star">
-                    {student.sessions_completed || 0}
-                  </div>
-                </div>
-                <div>
-                  <div className="font-body-space text-space-text-secondary text-sm mb-2">
-                    Total XP
-                  </div>
-                  <div className="font-space text-[24px] text-space-nebula">
-                    {student.xp || 0}
-                  </div>
-                </div>
-              </div>
-            </CardStar>
-          </div>
-
-          {/* MAIN CONTENT GRID */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
-            {/* LEFT: SKILL MAP (spans 3 columns) */}
-            <div className="lg:col-span-3">
-              <CardStar variant="default">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="font-space text-[18px] text-space-star">
-                    SKILL CONSTELLATION
-                  </h3>
-                  {view3D && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="font-body-space text-space-text-secondary text-xs"
-                    >
-                      Move your mouse to explore 🖱️
-                    </motion.div>
-                  )}
-                </div>
-                
-                <div 
-                  className="relative bg-space-sunken rounded-xl p-8 overflow-hidden"
-                  onMouseMove={handleMouseMove}
-                  onMouseLeave={() => view3D && setRotation({ x: 0, y: 0 })}
-                >
-                  {/* Starfield background */}
-                  <div 
-                    className="absolute inset-0 opacity-30"
-                    style={{
-                      backgroundImage: 'radial-gradient(2px 2px at 20% 30%, white, transparent), radial-gradient(2px 2px at 60% 70%, white, transparent), radial-gradient(1px 1px at 50% 50%, white, transparent), radial-gradient(1px 1px at 80% 10%, white, transparent), radial-gradient(2px 2px at 90% 60%, white, transparent)',
-                      backgroundSize: '200px 200px',
-                      backgroundPosition: '0 0, 40px 60px, 130px 270px, 70px 100px, 150px 50px'
-                    }}
-                  />
-                  
-                  <motion.svg 
-                    ref={svgRef}
-                    viewBox="0 0 360 480" 
-                    className="w-full h-auto relative z-10"
-                    style={{ 
-                      minHeight: '480px',
-                      perspective: view3D ? '1000px' : 'none'
-                    }}
-                    animate={view3D ? {
-                      rotateX: rotation.x,
-                      rotateY: rotation.y,
-                    } : {
-                      rotateX: 0,
-                      rotateY: 0,
-                    }}
-                    transition={{ type: 'spring', stiffness: 100, damping: 20 }}
-                  >
-                    {/* Connection lines */}
-                    <g className="connections">
-                      {CONNECTIONS.map((conn, idx) => {
-                        const fromSkill = allSkills.find(s => s.id === conn.from)
-                        const toSkill = allSkills.find(s => s.id === conn.to)
-                        if (!fromSkill || !toSkill) return null
-
-                        const fromStatus = getSkillStatus(conn.from)
-                        const toStatus = getSkillStatus(conn.to)
-                        const isActive = fromStatus !== 'locked' && toStatus !== 'locked'
-
-                        // Apply 3D offset
-                        const fromX = fromSkill.x + (view3D ? fromSkill.z * 0.3 : 0)
-                        const toX = toSkill.x + (view3D ? toSkill.z * 0.3 : 0)
-
-                        return (
-                          <motion.line
-                            key={idx}
-                            x1={fromX + 20}
-                            y1={fromSkill.y + 20}
-                            x2={toX + 20}
-                            y2={toSkill.y + 20}
-                            stroke={isActive ? '#A78BFA' : '#2E2A6E'}
-                            strokeWidth="2"
-                            strokeDasharray={isActive ? '0' : '5,5'}
-                            initial={{ pathLength: 0, opacity: 0 }}
-                            animate={{ pathLength: 1, opacity: isActive ? 0.6 : 0.3 }}
-                            transition={{ duration: 1, delay: idx * 0.1 }}
-                          />
-                        )
-                      })}
-                    </g>
-
-                    {/* Skill nodes */}
-                    {allSkills.map((skill, index) => {
-                      const status = getSkillStatus(skill.id)
-                      const mastery = getSkillMastery(skill.id)
-                      const isSelected = selectedSkill?.id === skill.id
-                      const isHovered = hoveredSkill === skill.id
-                      const color = getSkillColor(status)
-                      const isNewlyUnlocked = unlockedSkills.has(skill.id) && status !== 'locked'
-
-                      // Apply 3D transformation
-                      const x = skill.x + (view3D ? skill.z * 0.3 : 0)
-                      const scale = view3D ? 1 + skill.z * 0.002 : 1
-
-                      return (
-                        <motion.g
-                          key={skill.id}
-                          transform={`translate(${x}, ${skill.y})`}
-                          onClick={() => handleSkillClick(skill)}
-                          onMouseEnter={() => setHoveredSkill(skill.id)}
-                          onMouseLeave={() => setHoveredSkill(null)}
-                          className="cursor-pointer"
-                          initial={{ scale: 0, opacity: 0 }}
-                          animate={{ 
-                            scale: isNewlyUnlocked ? [0, 1.5, scale] : scale, 
-                            opacity: 1 
-                          }}
-                          transition={{ 
-                            duration: 0.6, 
-                            delay: index * 0.1,
-                            type: 'spring'
-                          }}
-                          whileHover={{ scale: scale * 1.1 }}
-                        >
-                          {/* Glow effect */}
-                          {(isSelected || isHovered) && (
-                            <motion.circle
-                              cx="20"
-                              cy="20"
-                              r="28"
-                              fill={color}
-                              opacity="0.2"
-                              initial={{ scale: 0.8, opacity: 0 }}
-                              animate={{ 
-                                scale: [0.8, 1.2, 0.8],
-                                opacity: [0.2, 0.4, 0.2]
-                              }}
-                              transition={{ 
-                                duration: 2, 
-                                repeat: Infinity,
-                                ease: 'easeInOut'
-                              }}
-                              style={{ filter: 'blur(8px)' }}
-                            />
-                          )}
-
-                          {/* Outer ring */}
-                          <circle
-                            cx="20"
-                            cy="20"
-                            r="22"
-                            fill="none"
-                            stroke={color}
-                            strokeWidth="2"
-                            opacity="0.3"
-                          />
-
-                          {/* Progress arc with animation */}
-                          {mastery > 0 && (
-                            <motion.circle
-                              cx="20"
-                              cy="20"
-                              r="22"
-                              fill="none"
-                              stroke={color}
-                              strokeWidth="2"
-                              strokeDasharray={`${(mastery / 100) * 138.23} 138.23`}
-                              strokeLinecap="round"
-                              transform="rotate(-90 20 20)"
-                              initial={{ strokeDasharray: '0 138.23' }}
-                              animate={{ strokeDasharray: `${(mastery / 100) * 138.23} 138.23` }}
-                              transition={{ duration: 1, ease: 'easeOut' }}
-                            />
-                          )}
-
-                          {/* Inner circle */}
-                          <motion.circle
-                            cx="20"
-                            cy="20"
-                            r="18"
-                            fill={status === 'locked' ? '#1E1B4B' : color}
-                            opacity={status === 'locked' ? 0.5 : 0.9}
-                            style={{
-                              filter: status !== 'locked' ? `drop-shadow(0 0 6px ${color})` : 'none'
-                            }}
-                            whileHover={{ r: 20 }}
-                            transition={{ duration: 0.2 }}
-                          />
-
-                          {/* Icon/Emoji */}
-                          <text
-                            x="20"
-                            y="20"
-                            textAnchor="middle"
-                            dominantBaseline="central"
-                            fontSize="16"
-                            opacity={status === 'locked' ? 0.4 : 1}
-                          >
-                            {skill.icon}
-                          </text>
-
-                          {/* Skill name */}
-                          <text
-                            x="20"
-                            y="48"
-                            textAnchor="middle"
-                            fill={color}
-                            fontSize="9"
-                            fontFamily="DM Sans"
-                            opacity="0.9"
-                          >
-                            {skill.name.split(' ')[0]}
-                          </text>
-
-                          {/* Mastery percentage */}
-                          {mastery > 0 && (
-                            <text
-                              x="20"
-                              y="60"
-                              textAnchor="middle"
-                              fill={color}
-                              fontSize="7"
-                              fontFamily="Space Mono"
-                              opacity="0.7"
-                            >
-                              {mastery.toFixed(0)}%
-                            </text>
-                          )}
-
-                          {/* Sparkle animation for mastered skills */}
-                          {status === 'mastered' && (
-                            <>
-                              {[0, 1, 2, 3].map(i => (
-                                <motion.text
-                                  key={i}
-                                  x="20"
-                                  y="20"
-                                  textAnchor="middle"
-                                  dominantBaseline="central"
-                                  fontSize="8"
-                                  initial={{ opacity: 0, scale: 0 }}
-                                  animate={{
-                                    opacity: [0, 1, 0],
-                                    scale: [0, 1.5, 0],
-                                    x: 20 + Math.cos(i * Math.PI / 2) * 30,
-                                    y: 20 + Math.sin(i * Math.PI / 2) * 30
-                                  }}
-                                  transition={{
-                                    duration: 2,
-                                    repeat: Infinity,
-                                    delay: i * 0.5,
-                                    ease: 'easeOut'
-                                  }}
-                                >
-                                  ✨
-                                </motion.text>
-                              ))}
-                            </>
-                          )}
-                        </motion.g>
-                      )
-                    })}
-                  </motion.svg>
-
-                  {/* Legend */}
-                  <div className="flex flex-wrap gap-4 mt-6 pt-6 border-t border-space-surface">
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#FDE047' }} />
-                      <span className="font-body-space text-xs text-space-text-secondary">Mastered (80%+)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#A78BFA' }} />
-                      <span className="font-body-space text-xs text-space-text-secondary">Learning (50%+)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#60A5FA' }} />
-                      <span className="font-body-space text-xs text-space-text-secondary">Started</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#4B4876' }} />
-                      <span className="font-body-space text-xs text-space-text-secondary">Locked</span>
-                    </div>
-                  </div>
-                </div>
-              </CardStar>
-            </div>
-
-            {/* RIGHT: RECOMMENDATIONS */}
-            <div className="lg:col-span-1">
-              <SkillRecommendations
-                allSkills={allSkills}
-                getSkillMastery={getSkillMastery}
-                getSkillStatus={getSkillStatus}
-              />
-              
-              {/* SKILL DETAILS (below recommendations) */}
-              <CardStar variant="achievement" className="mt-8">
-                {selectedSkill ? (
-                  <div>
-                    <div className="text-center mb-4">
-                      <div className="text-[48px] mb-2">{selectedSkill.icon}</div>
-                      <h3 className="font-space text-[20px] text-space-star mb-2">
-                        {selectedSkill.name}
-                      </h3>
-                      <BadgeStar 
-                        variant={getSkillStatus(selectedSkill.id)}
-                        size="md"
-                      >
-                        {getSkillStatus(selectedSkill.id).toUpperCase()}
-                      </BadgeStar>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div>
-                        <div className="font-body-space text-space-text-secondary text-sm mb-2">
-                          Mastery Level
-                        </div>
-                        <ProgressStar value={getSkillMastery(selectedSkill.id)} />
-                      </div>
-
-                      <div>
-                        <div className="font-body-space text-space-text-secondary text-sm mb-2">
-                          Category
-                        </div>
-                        <div className="font-mono text-space-nebula text-sm">
-                          {selectedSkill.category}
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="font-body-space text-space-text-secondary text-sm mb-2">
-                          Description
-                        </div>
-                        <div className="font-body-space text-space-text text-sm leading-relaxed">
-                          {getSkillDescription(selectedSkill.id)}
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="font-body-space text-space-text-secondary text-sm mb-2">
-                          Next Milestone
-                        </div>
-                        <div className="font-body-space text-space-text text-sm">
-                          {getNextMilestone(getSkillMastery(selectedSkill.id))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <div className="text-[48px] mb-4">🌌</div>
-                    <div className="font-space text-space-nebula text-base mb-2">
-                      SELECT A SKILL
-                    </div>
-                    <div className="font-body-space text-space-text-secondary text-sm">
-                      Click on any skill node to view details
-                    </div>
-                  </div>
-                )}
-              </CardStar>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
 
-const getSkillDescription = (skillId) => {
-  const descriptions = {
-    logic: 'Foundation of analytical thinking. Solve puzzles, identify patterns, and make deductions.',
-    memory: 'Retain and recall information effectively. Build your mental database.',
-    attention: 'Focus and concentration. Filter distractions and maintain awareness.',
-    comprehension: 'Understand complex ideas. Connect concepts and extract meaning.',
-    problem_solving: 'Apply knowledge to overcome challenges. Think creatively and strategically.',
-    wisdom: 'Synthesize experience into insight. Make sound judgments and decisions.',
-  }
-  return descriptions[skillId] || 'Master this skill to unlock new abilities.'
-}
-
-const getNextMilestone = (currentMastery) => {
-  if (currentMastery < 50) return `Reach 50% to unlock Learning status (${(50 - currentMastery).toFixed(0)}% to go)`
-  if (currentMastery < 80) return `Reach 80% to achieve Mastered status (${(80 - currentMastery).toFixed(0)}% to go)`
-  return 'Skill Mastered! Keep practicing to maintain proficiency.'
-}
-
-export default LearningPathEnhanced
+export default LearningPath

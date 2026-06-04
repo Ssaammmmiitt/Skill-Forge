@@ -12,6 +12,7 @@ import ProgressRaw from '../components/ui/ProgressRaw'
 import Spinner from '../components/ui/Spinner'
 import Modal from '../components/ui/Modal'
 import ThemeToggle from '../components/ui/ThemeToggle'
+import { resolveStudentId } from '../utils/resolveStudentId'
 
 const QuizThemeFab = () => (
   <div className="fixed top-6 right-6 z-50">
@@ -42,6 +43,13 @@ const Quiz = () => {
   const [error, setError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
+  const [quizDifficulty, setQuizDifficulty] = useState(() => {
+    const stored = sessionStorage.getItem('sf_quiz_difficulty')
+    return stored ? Number(stored) : 5
+  })
+  const [totalTimeSeconds, setTotalTimeSeconds] = useState(0)
+  const [questionStartedAt, setQuestionStartedAt] = useState(Date.now())
+  const [cognitiveResult, setCognitiveResult] = useState(null)
 
   const currentQuestion = questions[currentIndex]
 
@@ -75,8 +83,13 @@ const Quiz = () => {
   const handleStart = async () => {
     setLoading(true)
     setError(null)
+    setCognitiveResult(null)
+    const difficulty =
+      student?.suggested_difficulty ??
+      (Number(sessionStorage.getItem('sf_quiz_difficulty')) || 5)
+    setQuizDifficulty(difficulty)
     try {
-      const data = await getQuiz(5)
+      const data = await getQuiz(difficulty)
       setQuestions(data.questions || [])
       setPhase('question')
       setCurrentIndex(0)
@@ -86,6 +99,8 @@ const Quiz = () => {
       setXpEarned(0)
       setEvents([])
       setAnswers([])
+      setTotalTimeSeconds(0)
+      setQuestionStartedAt(Date.now())
       setTimeLeft(30)
       setSelectedIndex(null)
     } catch (err) {
@@ -127,6 +142,9 @@ const Quiz = () => {
       setXpEarned(prev => prev + questionXP)
       setScore(prev => prev + (isCorrect ? 20 : 0))
       setEvents(newEvents)
+      const elapsed = Math.max(1, Math.round((Date.now() - questionStartedAt) / 1000))
+      setTotalTimeSeconds((prev) => prev + elapsed)
+
       setAnswers(prev => [...prev, {
         question_id: currentQuestion.id,
         chosen_index: index,
@@ -152,6 +170,7 @@ const Quiz = () => {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(prev => prev + 1)
       setTimeLeft(30)
+      setQuestionStartedAt(Date.now())
       setSelectedIndex(null)
       setPhase('question')
     } else {
@@ -173,20 +192,33 @@ const Quiz = () => {
       )
 
       const result = await submitQuiz({
-        student_id: user?.student_id,
+        student_id: resolveStudentId(user, student),
         answers: apiAnswers,
-        difficulty: 5,
-        time_taken: answers.length * 30,
+        difficulty: quizDifficulty,
+        time_taken: Math.max(totalTimeSeconds, answers.length),
       })
-      
-      // Check for level up
+
+      if (result.new_difficulty != null) {
+        sessionStorage.setItem('sf_quiz_difficulty', String(result.new_difficulty))
+        setQuizDifficulty(result.new_difficulty)
+      }
+
+      if (result.cognitive) {
+        setCognitiveResult(result.cognitive)
+      }
+
       const oldLevel = student?.level || 1
       const newLevel = result.student?.level || result.new_level || oldLevel
-      
+      const pathFocus =
+        result.learning_path?.focus ||
+        result.learning_style ||
+        result.student?.learning_style ||
+        'Unknown Path'
+
       if (newLevel > oldLevel) {
         setLevelUp({
           newLevel,
-          learningPath: result.learning_path || result.student?.learning_style || 'Unknown Path'
+          learningPath: pathFocus,
         })
       }
       
@@ -278,21 +310,28 @@ const Quiz = () => {
             style={{ borderRadius: '0px' }}
           >
             <div className="text-center">
-              <div className="font-arcade text-[10px] text-arcade-secondary tracking-[3px] mb-8">
+              <div className="font-arcade text-[12px] text-arcade-secondary tracking-[3px] mb-6">
                 SKILL FORGE
               </div>
-              <h1 className="font-arcade text-[26px] text-space-star tracking-[4px] mb-2">
+              <h1 className="font-arcade text-[28px] md:text-[32px] text-space-star tracking-[4px] mb-3">
                 ASSESSMENT
               </h1>
-              <div className="font-arcade text-[10px] text-arcade-secondary tracking-[2px]">
-                MODE // ADAPTIVE
+              <div className="font-arcade text-[12px] text-space-star tracking-[2px] mb-4">
+                MODE // ADAPTIVE ML
               </div>
+
+              <p className="font-body-space text-[15px] md:text-[16px] text-arcade-secondary leading-relaxed mt-2 max-w-md mx-auto px-2">
+                Five questions per run, drawn from a larger topic bank. Your speed, accuracy, and mistakes train the learning-style models—not the topic labels alone.
+              </p>
 
               <div className="border-b-[3px] border-dotted border-arcade-primary my-8" />
 
               <div className="grid grid-cols-3 gap-5 mb-10">
                 <MetricArcade label="QUESTIONS" value="05" />
-                <MetricArcade label="DIFFICULTY" value="05" />
+                <MetricArcade
+                  label="DIFFICULTY"
+                  value={String(quizDifficulty).padStart(2, '0')}
+                />
                 <MetricArcade label="TIME/Q" value="30S" />
               </div>
 
@@ -500,11 +539,26 @@ const Quiz = () => {
 
             <div className="mt-6">
               <div className="font-arcade text-[8px] text-arcade-secondary tracking-[2px] uppercase">
-                PATTERN DETECTED //
+                ML LEARNING STYLE //
               </div>
               <div className="font-arcade text-[12px] text-space-star tracking-[3px] mt-2">
-                {correctCount >= 4 ? 'FAST LEARNER' : correctCount >= 3 ? 'CONCEPTUAL' : 'MEMORIZATION'}
+                {(cognitiveResult?.predictions?.decision_tree ||
+                  student?.learning_style ||
+                  'UNKNOWN')
+                  .replace(/_/g, ' ')
+                  .toUpperCase()}
               </div>
+              {cognitiveResult?.confidence > 0 && (
+                <div className="font-arcade text-[8px] text-arcade-secondary tracking-[1px] mt-2">
+                  CONFIDENCE {(cognitiveResult.confidence * 100).toFixed(0)}%
+                  {cognitiveResult.model_agreement ? ' · MODELS AGREE' : ' · ENSEMBLE'}
+                </div>
+              )}
+              {cognitiveResult?.explanations?.length > 0 && (
+                <p className="font-arcade text-[7px] text-arcade-secondary mt-3 leading-relaxed">
+                  {cognitiveResult.explanations[0]}
+                </p>
+              )}
             </div>
 
             {answers.filter(a => a.is_correct).length >= 3 && (

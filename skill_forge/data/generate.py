@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from data.models import get_db, insert_student, insert_session, Student, Session
 import numpy as np
@@ -148,14 +148,13 @@ def main():
         # Commit transaction
         conn.commit()
         
-        # Save to CSV
+        # Save to CSV (skill_forge/data + optional root data/ for ML scripts)
         df = pd.DataFrame(sessions_list)
-        
-        # Ensure directory structure exists (just in case)
-        import os
-        os.makedirs("data", exist_ok=True)
-        
-        df.to_csv("data/training_data.csv", index=False)
+        root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        csv_paths = [os.path.join(root, "skill_forge", "data", "training_data.csv")]
+        for csv_path in csv_paths:
+            os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+            df.to_csv(csv_path, index=False)
         
         # Print summary
         counts = df["learning_style"].value_counts()
@@ -164,7 +163,9 @@ def main():
         print("conceptual:      {} rows".format(counts.get("conceptual", 0)))
         print("memorization:    {} rows".format(counts.get("memorization", 0)))
         print("Total:          {} rows".format(len(df)))
-        print("SYNTHETIC DATA READY — data/training_data.csv")
+        print("SYNTHETIC DATA READY —")
+        for p in csv_paths:
+            print(f"  {p}")
         
     finally:
         conn.close()
