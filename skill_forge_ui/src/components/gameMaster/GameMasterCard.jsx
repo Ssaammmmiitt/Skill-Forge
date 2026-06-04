@@ -38,16 +38,16 @@ const GameMasterCard = ({ gameMaster, variant = 'star', compact = false }) => {
 
   return (
     <Wrapper compact={compact}>
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
+      <div className="flex flex-wrap items-start justify-between gap-2 md:gap-4 mb-3 md:mb-4">
         <div>
-          <p className="font-space text-xs uppercase tracking-widest text-space-nebula mb-1">
+          <p className="font-space text-[10px] md:text-xs uppercase tracking-widest text-space-nebula mb-1">
             {gameMaster.title || 'GAME MASTER'}
           </p>
           <h3
             className={
               variant === 'arcade'
-                ? 'font-arcade text-[14px] text-space-star tracking-[2px]'
-                : 'font-space text-xl text-space-star'
+                ? 'font-arcade text-[12px] md:text-[14px] text-space-star tracking-[2px]'
+                : 'font-space text-base md:text-xl text-space-star'
             }
           >
             Your learning briefing
@@ -61,15 +61,15 @@ const GameMasterCard = ({ gameMaster, variant = 'star', compact = false }) => {
       <p
         className={
           variant === 'arcade'
-            ? 'font-body-space text-[14px] text-arcade-secondary leading-relaxed mb-4'
-            : 'font-body-space text-[15px] text-space-nebula leading-relaxed mb-6'
+            ? 'font-body-space text-[12px] md:text-[14px] text-arcade-secondary leading-relaxed mb-3 md:mb-4'
+            : 'font-body-space text-[13px] md:text-[15px] text-space-nebula leading-relaxed mb-4 md:mb-6'
         }
       >
         {gameMaster.focus}
       </p>
 
       <div
-        className={`grid gap-4 mb-4 ${
+        className={`grid gap-2 md:gap-4 mb-4 ${
           compact ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'
         }`}
       >
@@ -96,7 +96,7 @@ const GameMasterCard = ({ gameMaster, variant = 'star', compact = false }) => {
       )}
 
       {gameMaster.explanations?.length > 0 && (
-        <ul className="mb-5 space-y-2 font-body-space text-[13px] text-space-text-secondary list-disc pl-5">
+        <ul className="mb-4 md:mb-5 space-y-1.5 md:space-y-2 font-body-space text-[11px] md:text-[13px] text-space-text-secondary list-disc pl-4 md:pl-5">
           {gameMaster.explanations.map((line, i) => (
             <li key={i}>{line}</li>
           ))}
