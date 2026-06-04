@@ -12,10 +12,27 @@ XP_PER_LEVEL       = 500   # level = xp // 500
 ATTR_MAX           = 100
 ATTR_MIN           = 0
 
-# Attribute gain rates (per unit of activity)
-INT_PER_STUDY_MIN  = 0.4   # INT gained per minute of study
-WIS_PER_TASK       = 5     # WIS gained per completed task
-ENERGY_PER_SLEEP_H = 12    # energy gained per hour of sleep
+# Attribute gain — study (minutes)
+STUDY_MIN_MINUTES       = 15    # minimum session length to count
+STUDY_MAX_MINUTES       = 120   # cap per log entry
+STUDY_DAILY_INT_CAP     = 15    # max INT from study per calendar day
+STUDY_INT_RATE_PRIMARY  = 0.25  # INT per minute for first block
+STUDY_INT_RATE_SECONDARY = 0.12 # INT per minute after primary block
+STUDY_PRIMARY_MINUTES   = 45    # minutes at full rate before taper
+STUDY_ENERGY_COST_MIN   = 0.15  # energy lost per study minute
+
+# Attribute gain — sleep (hours)
+SLEEP_MIN_HOURS         = 4
+SLEEP_MAX_HOURS         = 12
+SLEEP_OPTIMAL_LOW       = 7
+SLEEP_OPTIMAL_HIGH      = 9
+SLEEP_RATE_OPTIMAL      = 10    # energy per hour in 7–9 h range
+SLEEP_RATE_NEAR         = 7     # 6–7 h or 9–10 h
+SLEEP_RATE_POOR         = 4     # under 6 h or over 10 h
+
+# Attribute gain — tasks
+WIS_PER_TASK            = 4
+TASK_MAX_PER_DAY        = 5     # max tasks that grant WIS per calendar day
 
 # Difficulty adjustment thresholds
 DIFFICULTY_UP_THRESHOLD   = 0.85   # accuracy above this → harder

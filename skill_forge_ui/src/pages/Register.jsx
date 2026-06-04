@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { useAuthStore } from '../store/useAuthStore'
 import { register } from '../api/auth'
 import { useGoogleSignIn } from '../hooks/useGoogleSignIn'
@@ -19,6 +20,14 @@ const Register = () => {
   const navigate = useNavigate()
   const { setAuth, isAuthenticated } = useAuthStore()
   const { renderGoogleButton, loading: googleLoading, error: googleError, isConfigured: isGoogleConfigured, isSdkLoaded } = useGoogleSignIn()
+
+  const [confirmTouched, setConfirmTouched] = useState(false)
+
+  const passwordsMatch =
+    password.length > 0 && confirmPassword.length > 0 && password === confirmPassword
+  const confirmMismatch =
+    confirmTouched && confirmPassword.length > 0 && password !== confirmPassword
+  const passwordTooShort = password.length > 0 && password.length < 6
 
   // Extract first name for username suggestions
   const firstName = name.split(' ')[0] || ''
@@ -53,6 +62,7 @@ const Register = () => {
 
     if (password !== confirmPassword) {
       setError('Passwords do not match')
+      setConfirmTouched(true)
       return
     }
 
@@ -90,7 +100,12 @@ const Register = () => {
   }
 
   return (
-    <div className="min-h-screen bg-raw-bg flex flex-col">
+    <motion.div
+      className="min-h-screen bg-raw-bg flex flex-col"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
       <PublicHeader showAuthLinks={false} />
       <div className="flex flex-1 flex-col lg:flex-row">
       {/* Left Side - Hero Section */}
@@ -203,11 +218,19 @@ const Register = () => {
               </label>
               <PasswordInput
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  setError(null)
+                }}
                 placeholder="Min. 6 characters"
                 autoComplete="new-password"
                 required
               />
+              {passwordTooShort && (
+                <p className="font-mono text-[11px] text-raw-error mt-1">
+                  Password must be at least 6 characters
+                </p>
+              )}
             </div>
 
             <div>
@@ -216,17 +239,32 @@ const Register = () => {
               </label>
               <PasswordInput
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value)
+                  setError(null)
+                }}
+                onBlur={() => setConfirmTouched(true)}
+                placeholder="Re-enter your password"
                 autoComplete="new-password"
                 required
               />
+              {confirmMismatch && (
+                <p className="font-mono text-[11px] text-raw-error mt-1">
+                  Passwords do not match
+                </p>
+              )}
+              {passwordsMatch && (
+                <p className="font-mono text-[11px] text-raw-success mt-1">
+                  Passwords match
+                </p>
+              )}
             </div>
 
             <ButtonOffset
               size="lg"
               type="submit"
               className="w-full mt-2"
-              disabled={loading}
+              disabled={loading || confirmMismatch || passwordTooShort || !passwordsMatch}
             >
               {loading ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}
             </ButtonOffset>
@@ -280,7 +318,7 @@ const Register = () => {
         </div>
       </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 

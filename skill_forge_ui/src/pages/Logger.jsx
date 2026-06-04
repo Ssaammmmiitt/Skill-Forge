@@ -1,19 +1,22 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import ButtonOffset from '../components/ui/ButtonOffset'
 import { useNotifStore } from '../store/useNotifStore'
 import { useStudentStore } from '../store/useStudentStore'
 import { useAuthStore } from '../store/useAuthStore'
 import { logActivity } from '../api/student'
 import { resolveStudentId } from '../utils/resolveStudentId'
+import { previewStudyEffects, previewSleepEffects, STUDY_MIN_MINUTES } from '../utils/activityPreview'
 import PageIntro from '../components/layout/PageIntro'
 
 const Logger = () => {
   const addToast = useNotifStore(state => state.addToast)
   const applyActivityResult = useStudentStore(state => state.applyActivityResult)
   const refreshStudent = useStudentStore(state => state.refreshStudent)
+  const student = useStudentStore(state => state.student)
   const user = useAuthStore(state => state.user)
-  const studentId = resolveStudentId(user, null)
+  const studentId = resolveStudentId(user, student)
 
   const syncAfterActivity = async (result) => {
     if (result?.updated_attributes) {
@@ -60,9 +63,13 @@ const Logger = () => {
 
       await syncAfterActivity(result)
       const intGain = result.delta?.INT || 0
+      const energyCost = result.delta?.energy || 0
+      const note = result.notes?.[0]
       addToast({
-        message: `+${intGain} INT`,
-        type: 'info'
+        message: intGain > 0
+          ? `+${intGain} INT · -${Math.abs(energyCost)} ENERGY`
+          : (note || 'No INT gained'),
+        type: intGain > 0 ? 'info' : 'error'
       })
 
       setStudyTopic('')
@@ -93,9 +100,12 @@ const Logger = () => {
 
       await syncAfterActivity(result)
       const energyGain = result.delta?.energy || 0
+      const note = result.notes?.[0]
       addToast({
-        message: `+${energyGain} ENERGY`,
-        type: 'info'
+        message: energyGain > 0
+          ? `+${energyGain} ENERGY`
+          : (note || 'No energy gained'),
+        type: energyGain > 0 ? 'info' : 'error'
       })
 
       setSleepHours('')
@@ -107,19 +117,24 @@ const Logger = () => {
     }
   }
 
-  const studyDelta = studyDuration > 0 ? Math.round(parseFloat(studyDuration) * 0.4) : 0
-  const sleepDelta = sleepHours > 0 ? Math.min(100, Math.round(parseFloat(sleepHours) * 12)) : 0
+  const studyPreview = previewStudyEffects(studyDuration, student?.energy ?? 0)
+  const sleepPreview = previewSleepEffects(sleepHours, student?.energy ?? 0)
 
   return (
-    <div className="min-h-screen bg-raw-bg p-6">
+    <motion.div
+      className="min-h-screen bg-raw-bg p-6"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.28 }}
+    >
       <div className="max-w-3xl mx-auto">
         <PageIntro
           title="LOG ACTIVITY"
-          purpose="Record study, sleep, and tasks outside quizzes. These update INT, WIS, and Energy-which also feed your Learning Path skills."
+          purpose="Record study and sleep outside quizzes. Study builds INT but costs energy; sleep restores energy best at 7–9 hours."
           steps={[
-            'Study minutes → INT',
-            'Sleep hours → Energy',
-            'Completed tasks → WIS',
+            `Study ${STUDY_MIN_MINUTES}+ min → INT (tapers after 45 min, daily cap 15)`,
+            'Sleep → Energy (7–9 h optimal, one log per day)',
+            'Daily tasks → WIS on the Tasks page (max 5/day)',
           ]}
         />
 
@@ -173,10 +188,25 @@ const Logger = () => {
                 )}
               </div>
 
-              {studyDelta > 0 && (
-                <div className="font-raw text-[18px] text-raw-text uppercase">
-                  +{studyDelta} INTELLIGENCE
+              {studyPreview.intGain > 0 && (
+                <div className="font-raw text-[14px] text-raw-text uppercase space-y-1">
+                  <div>+{studyPreview.intGain} INTELLIGENCE</div>
+                  {studyPreview.energyCost > 0 && (
+                    <div className="text-raw-text-secondary text-[11px]">
+                      −{studyPreview.energyCost} ENERGY (focus cost)
+                    </div>
+                  )}
+                  {studyPreview.note && (
+                    <div className="text-raw-text-tertiary text-[10px] normal-case font-mono">
+                      {studyPreview.note}
+                    </div>
+                  )}
                 </div>
+              )}
+              {studyDuration > 0 && studyPreview.intGain === 0 && (
+                <p className="font-mono text-[11px] text-raw-text-tertiary">
+                  {studyPreview.note || `Minimum ${STUDY_MIN_MINUTES} minutes required`}
+                </p>
               )}
 
               <ButtonOffset
@@ -231,9 +261,14 @@ const Logger = () => {
                 )}
               </div>
 
-              {sleepDelta > 0 && (
-                <div className="font-raw text-[18px] text-raw-text uppercase">
-                  +{sleepDelta} ENERGY
+              {sleepPreview.energyGain > 0 && (
+                <div className="font-raw text-[14px] text-raw-text uppercase space-y-1">
+                  <div>+{sleepPreview.energyGain} ENERGY</div>
+                  {sleepPreview.note && (
+                    <div className="text-raw-text-tertiary text-[10px] normal-case font-mono">
+                      {sleepPreview.note}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -269,7 +304,7 @@ const Logger = () => {
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 

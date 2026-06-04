@@ -12,9 +12,9 @@ _DB_DIR = os.path.join(_REPO_ROOT, "skill_forge", "data")
 class Student:
     student_id: str = dataclasses.field(default_factory=lambda: str(uuid.uuid4()))
     name: str = ""
-    INT: int = 50
-    WIS: int = 50
-    energy: int = 80
+    INT: int = 0
+    WIS: int = 0
+    energy: int = 0
     xp: int = 0
     level: int = 1
     learning_style: str = "unknown"
@@ -32,6 +32,21 @@ class DailyTodo:
     label: str = ""
     completed: bool = False
     sort_order: int = 0
+    created_at: str = dataclasses.field(
+        default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat()
+    )
+
+
+@dataclasses.dataclass
+class ActivityLog:
+    log_id: str = dataclasses.field(default_factory=lambda: str(uuid.uuid4()))
+    student_id: str = ""
+    activity: str = ""
+    value: float = 0.0
+    activity_date: str = ""  # YYYY-MM-DD
+    int_delta: int = 0
+    wis_delta: int = 0
+    energy_delta: int = 0
     created_at: str = dataclasses.field(
         default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat()
     )
@@ -105,6 +120,24 @@ def create_tables(conn: sqlite3.Connection) -> None:
     conn.execute("""
         CREATE INDEX IF NOT EXISTS idx_daily_todos_student_date
         ON daily_todos (student_id, task_date)
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS activity_logs (
+            log_id TEXT PRIMARY KEY,
+            student_id TEXT NOT NULL,
+            activity TEXT NOT NULL,
+            value REAL NOT NULL,
+            activity_date TEXT NOT NULL,
+            int_delta INTEGER NOT NULL DEFAULT 0,
+            wis_delta INTEGER NOT NULL DEFAULT 0,
+            energy_delta INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (student_id) REFERENCES students(student_id)
+        )
+    """)
+    conn.execute("""
+        CREATE INDEX IF NOT EXISTS idx_activity_logs_student_date
+        ON activity_logs (student_id, activity_date, activity)
     """)
 
 
@@ -302,6 +335,66 @@ def update_student(conn: sqlite3.Connection, student: Student) -> None:
         student.streak,
         student.student_id,
     ))
+
+
+def insert_activity_log(conn: sqlite3.Connection, log: ActivityLog) -> None:
+    conn.execute(
+        """
+        INSERT INTO activity_logs (
+            log_id, student_id, activity, value, activity_date,
+            int_delta, wis_delta, energy_delta, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            log.log_id,
+            log.student_id,
+            log.activity,
+            log.value,
+            log.activity_date,
+            log.int_delta,
+            log.wis_delta,
+            log.energy_delta,
+            log.created_at,
+        ),
+    )
+
+
+def get_activity_totals_for_date(
+    conn: sqlite3.Connection, student_id: str, activity_date: str
+) -> dict[str, float]:
+    """Sum attribute deltas and activity values logged on a given date."""
+    rows = conn.execute(
+        """
+        SELECT activity,
+               COALESCE(SUM(int_delta), 0) AS int_total,
+               COALESCE(SUM(wis_delta), 0) AS wis_total,
+               COALESCE(SUM(energy_delta), 0) AS energy_total,
+               COALESCE(SUM(value), 0) AS value_total
+        FROM activity_logs
+        WHERE student_id = ? AND activity_date = ?
+        GROUP BY activity
+        """,
+        (student_id, activity_date),
+    ).fetchall()
+
+    totals = {
+        "study_int_today": 0.0,
+        "study_minutes_today": 0.0,
+        "tasks_wis_today": 0.0,
+        "tasks_rewarded_today": 0.0,
+        "sleep_logged_today": False,
+    }
+    for row in rows:
+        activity = row["activity"]
+        if activity == "study":
+            totals["study_int_today"] = float(row["int_total"])
+            totals["study_minutes_today"] = float(row["value_total"])
+        elif activity == "task_done":
+            totals["tasks_wis_today"] = float(row["wis_total"])
+            totals["tasks_rewarded_today"] = float(row["value_total"])
+        elif activity == "sleep":
+            totals["sleep_logged_today"] = True
+    return totals
 
 
 if __name__ == "__main__":

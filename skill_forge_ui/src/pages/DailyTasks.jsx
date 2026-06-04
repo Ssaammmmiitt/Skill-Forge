@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import ButtonOffset from '../components/ui/ButtonOffset'
 import PageIntro from '../components/layout/PageIntro'
 import { useAuthStore } from '../store/useAuthStore'
@@ -15,6 +16,7 @@ import {
   copyIncompleteTodos,
 } from '../api/todos'
 import { logActivity } from '../api/student'
+import { previewTaskEffects, TASK_MAX_PER_DAY, WIS_PER_TASK } from '../utils/activityPreview'
 import Spinner from '../components/ui/Spinner'
 
 const DailyTasks = () => {
@@ -121,10 +123,17 @@ const DailyTasks = () => {
         student_id: studentId,
         activity: 'task_done',
         value: done,
+        activity_date: taskDate,
       })
       await refreshStudent(studentId)
       const wis = result.delta?.WIS ?? 0
-      addToast({ message: `+${wis} WIS FROM ${done} TASK(S)`, type: 'info' })
+      const note = result.notes?.[0]
+      addToast({
+        message: wis > 0
+          ? `+${wis} WIS FROM ${result.delta?.WIS ? Math.ceil(wis / WIS_PER_TASK) : 0} TASK(S)`
+          : (note || 'No WIS gained — daily cap may be reached'),
+        type: wis > 0 ? 'info' : 'error',
+      })
     } catch (err) {
       addToast({ message: err.message || 'Could not log rewards', type: 'error' })
     } finally {
@@ -132,20 +141,28 @@ const DailyTasks = () => {
     }
   }
 
+  const doneCount = todos.filter((t) => t.completed).length
+  const taskPreview = previewTaskEffects(doneCount)
+
   const total = todos.length
   const progress = total > 0 ? (completedCount / total) * 100 : 0
 
   return (
-    <div className="min-h-screen bg-raw-bg p-6">
+    <motion.div
+      className="min-h-screen bg-raw-bg p-6"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.28 }}
+    >
       <div className="max-w-3xl mx-auto">
         <PageIntro
           title="DAILY TASKS"
-          purpose="Build your own checklist for each day. Tasks are saved per date so you can plan tomorrow or review yesterday. Completing items can earn WIS when you sync rewards."
+          purpose="Build your own checklist for each day. Tasks are saved per date so you can plan tomorrow or review yesterday. Sync WIS rewards up to 5 completed tasks per day."
           steps={[
             'Pick a date with the arrows or date picker',
             'Add tasks - they stay on that day only',
             'Check off work as you go',
-            'Use “Sync WIS” to apply completed tasks to your character (same as Log Activity)',
+            `Use “Sync WIS” for up to ${TASK_MAX_PER_DAY} tasks/day (+${WIS_PER_TASK} WIS each)`,
           ]}
         />
 
@@ -289,14 +306,19 @@ const DailyTasks = () => {
           {completedCount > 0 && (
             <div className="mt-6 pt-6 border-t-[2px] border-raw-border">
               <p className="font-mono text-xs text-raw-text-secondary mb-3">
-                Log completed tasks to gain WIS (once per sync).
+                Sync rewards up to {TASK_MAX_PER_DAY} completed tasks per day (+{WIS_PER_TASK} WIS each).
+                {taskPreview.wisGain > 0 && (
+                  <span className="block mt-1 text-raw-text">
+                    Preview: +{taskPreview.wisGain} WIS ({taskPreview.rewardedTasks} task{taskPreview.rewardedTasks !== 1 ? 's' : ''})
+                  </span>
+                )}
               </p>
               <ButtonOffset
                 size="md"
                 onClick={handleRewardWis}
                 disabled={rewarding}
               >
-                {rewarding ? 'SYNCING…' : `SYNC WIS (+${completedCount * 5} max)`}
+                {rewarding ? 'SYNCING…' : `SYNC WIS (+${taskPreview.wisGain})`}
               </ButtonOffset>
             </div>
           )}
@@ -310,7 +332,7 @@ const DailyTasks = () => {
           .
         </p>
       </div>
-    </div>
+    </motion.div>
   )
 }
 

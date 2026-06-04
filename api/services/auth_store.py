@@ -171,9 +171,9 @@ def create_student_profile(conn, user_id: str, name: str) -> None:
     student = Student(
         student_id=user_id,
         name=name,
-        INT=50,
-        WIS=50,
-        energy=80,
+        INT=0,
+        WIS=0,
+        energy=0,
         xp=0,
         level=1,
         learning_style="unknown",

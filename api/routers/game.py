@@ -10,14 +10,17 @@ from pydantic import BaseModel
 from api.deps import DbConn
 from api.responses import error, success
 from data.models import (
+    ActivityLog,
     Session,
+    get_activity_totals_for_date,
     get_sessions_by_student,
     get_student_by_id,
+    insert_activity_log,
     insert_session,
     update_student,
 )
 from engine.adaptive import adjust_difficulty
-from engine.attributes import get_attribute_delta, update_attributes
+from engine.attributes import compute_task_effects, update_attributes
 from engine.behavioral_metrics import build_behavioral_metrics
 from engine.cognitive import build_cognitive_profile
 from engine.game_master import build_game_master
@@ -56,6 +59,7 @@ class LogActivityBody(BaseModel):
     student_id: str | None = None
     activity: str | None = None
     value: float | None = None
+    activity_date: str | None = None  # YYYY-MM-DD, defaults to UTC today
 
 
 class QuizSubmitBody(BaseModel):
@@ -106,14 +110,50 @@ def log_activity(body: LogActivityBody, conn: DbConn):
     except (ValueError, TypeError):
         return error("Value must be a number", 400)
 
+    if value <= 0:
+        return error("Value must be greater than 0", 400)
+
     student = get_student_by_id(conn, body.student_id)
     if student is None:
         return error("Student not found", 404)
 
-    updated_student = update_attributes(student, body.activity, value)
-    delta = get_attribute_delta(student, updated_student)
-    update_student(conn, updated_student)
-    conn.commit()
+    activity_date = body.activity_date or datetime.now(timezone.utc).date().isoformat()
+    daily_totals = get_activity_totals_for_date(conn, body.student_id, activity_date)
+
+    updated_student, delta, notes = update_attributes(
+        student,
+        body.activity,
+        value,
+        activity_date=activity_date,
+        daily_totals=daily_totals,
+    )
+
+    log_value = value
+    if body.activity == "task_done":
+        log_value = float(
+            compute_task_effects(
+                value,
+                daily_totals.get("tasks_rewarded_today", 0.0),
+            )["rewarded_tasks"]
+        )
+
+    if any(delta.values()):
+        insert_activity_log(
+            conn,
+            ActivityLog(
+                student_id=body.student_id,
+                activity=body.activity,
+                value=log_value,
+                activity_date=activity_date,
+                int_delta=delta["INT"],
+                wis_delta=delta["WIS"],
+                energy_delta=delta["energy"],
+            ),
+        )
+        update_student(conn, updated_student)
+        conn.commit()
+    else:
+        conn.commit()
 
     return success(
         {
@@ -123,6 +163,7 @@ def log_activity(body: LogActivityBody, conn: DbConn):
                 "energy": updated_student.energy,
             },
             "delta": delta,
+            "notes": notes,
         }
     )
 

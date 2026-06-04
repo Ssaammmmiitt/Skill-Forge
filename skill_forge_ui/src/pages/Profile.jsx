@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { useStudent } from '../hooks/useStudent'
 import BadgeStar from '../components/ui/BadgeStar'
 import ProgressStar from '../components/ui/ProgressStar'
@@ -60,9 +61,15 @@ const Profile = () => {
   }
 
   const levelInfo = getLevelInfo(student.xp, XP_PER_LEVEL)
+  const displayLevel = student.level ?? levelInfo.currentLevel
 
   return (
-    <div className="min-h-full bg-space-deep">
+    <motion.div
+      className="min-h-full bg-space-deep"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
       <div className="max-w-[1200px] mx-auto px-16">
         <section className="pt-12">
           <PageIntro
@@ -94,7 +101,7 @@ const Profile = () => {
 
           <div className="mt-4 flex items-center gap-3">
             <span className="font-raw text-raw-white text-sm uppercase tracking-[2px]">
-              LEVEL {levelInfo.currentLevel}
+              LEVEL {displayLevel}
             </span>
             <span className="text-space-nebula">·</span>
             <span className="font-mono text-space-nebula text-sm">
@@ -105,7 +112,7 @@ const Profile = () => {
           <div className="mt-3 w-64">
             <ProgressStar
               value={levelInfo.progress}
-              label={`${levelInfo.currentLevelXP} / ${levelInfo.xpForNextLevel} XP TO LEVEL ${levelInfo.currentLevel + 1}`}
+              label={`${levelInfo.currentLevelXP} / ${levelInfo.xpForNextLevel} XP TO LEVEL ${displayLevel + 1}`}
             />
           </div>
         </section>
@@ -166,9 +173,9 @@ const Profile = () => {
             </div>
 
             <div className="flex flex-col items-center">
-              <StatRing label="LEVEL" value={student.level * 10} size={120} system="star" />
+              <StatRing label="LEVEL" value={displayLevel * 10} size={120} system="star" />
               <div className="font-space font-bold text-[20px] text-raw-white mt-4">
-                {student.level * 10}
+                {displayLevel * 10}
               </div>
               <div className="font-body-space text-[12px] text-space-nebula uppercase">
                 Level Score
@@ -177,7 +184,7 @@ const Profile = () => {
           </div>
         </section>
       </div>
-    </div>
+    </motion.div>
   )
 }
 

@@ -4,6 +4,7 @@ import { Eye, EyeOff } from 'lucide-react'
 const PasswordInput = ({
   value,
   onChange,
+  onBlur,
   placeholder = '••••••••',
   id,
   required = false,
@@ -19,6 +20,7 @@ const PasswordInput = ({
         type={visible ? 'text' : 'password'}
         value={value}
         onChange={onChange}
+        onBlur={onBlur}
         placeholder={placeholder}
         required={required}
         className="w-full bg-raw-surface border-[3px] border-raw-border font-mono text-[15px] pl-3 pr-11 py-2.5 text-raw-text

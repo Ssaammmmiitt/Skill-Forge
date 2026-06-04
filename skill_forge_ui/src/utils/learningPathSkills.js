@@ -29,9 +29,9 @@ export function buildAttributesFromStudent(student) {
   if (student.attributes && Object.keys(student.attributes).length > 0) {
     return student.attributes
   }
-  const int = student.INT ?? 50
-  const wis = student.WIS ?? 50
-  const energy = student.energy ?? 50
+  const int = student.INT ?? 0
+  const wis = student.WIS ?? 0
+  const energy = student.energy ?? 0
   return {
     logic: int,
     memory: Math.round(int * 0.55 + wis * 0.25),

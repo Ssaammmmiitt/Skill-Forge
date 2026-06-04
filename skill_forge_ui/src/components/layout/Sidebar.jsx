@@ -26,6 +26,7 @@ const Sidebar = () => {
     { path: '/quiz', label: 'QUIZ' },
     { path: '/app/tasks', label: 'DAILY TASKS' },
     { path: '/app/log', label: 'LOG ACTIVITY' },
+    { path: '/app/reader', label: 'DOC READER' },
     { path: '/app/path', label: 'LEARNING PATH' },
     { path: '/app/analytics', label: 'ANALYTICS' },
     { path: '/app/leaderboard', label: 'LEADERBOARD' },
@@ -73,10 +74,11 @@ const Sidebar = () => {
       <div className="px-6 pb-6">
         {(() => {
           const levelInfo = getLevelInfo(student?.xp || 0, XP_PER_LEVEL)
+          const displayLevel = student?.level ?? levelInfo.currentLevel
           return (
             <>
               <div className="font-mono text-[10px] text-raw-text-tertiary uppercase mb-2">
-                LEVEL {levelInfo.currentLevel} XP
+                LEVEL {displayLevel} XP
               </div>
               <ProgressRaw
                 value={levelInfo.progress}

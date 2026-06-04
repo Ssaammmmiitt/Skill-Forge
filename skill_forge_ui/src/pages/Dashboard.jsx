@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { useStudent } from '../hooks/useStudent'
 import { useAnalytics } from '../hooks/useAnalytics'
 import MetricStar from '../components/ui/MetricStar'
@@ -59,12 +60,16 @@ const Dashboard = () => {
   }
 
   const levelInfo = getLevelInfo(student.xp, XP_PER_LEVEL)
+  const displayLevel = student.level ?? levelInfo.currentLevel
 
   return (
     <div className="min-h-full">
-
-      {/* HERO SECTION - RawBlock brutal hero */}
-      <section className="bg-raw-black px-20 pt-20 pb-16">
+      <motion.section
+        className="bg-raw-black px-20 pt-20 pb-16"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+      >
         <div className="font-raw text-raw-white text-[14px] uppercase tracking-[4px]">
           WELCOME BACK,
         </div>
@@ -77,7 +82,7 @@ const Dashboard = () => {
         <div className="font-mono text-[#666] text-xs mt-4">
           {formatDate()}
         </div>
-      </section>
+      </motion.section>
 
       {/* RAW DIVIDER */}
       <div className="border-b-[5px] border-raw-white" />
@@ -115,7 +120,7 @@ const Dashboard = () => {
         <div className="mt-8 max-w-2xl">
           <ProgressStar
             value={levelInfo.progress}
-            label={`LEVEL ${levelInfo.currentLevel} PROGRESS - ${levelInfo.currentLevelXP} / ${levelInfo.xpForNextLevel} XP`}
+            label={`LEVEL ${displayLevel} PROGRESS - ${levelInfo.currentLevelXP} / ${levelInfo.xpForNextLevel} XP`}
           />
         </div>
       </section>

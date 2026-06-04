@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import AppLayout from './components/layout/AppLayout'
 import ProtectedRoute from './components/auth/ProtectedRoute'
+import ToastStack from './components/ui/ToastStack'
 import Spinner from './components/ui/Spinner'
 import ErrorBoundary from './components/ErrorBoundary'
 
@@ -16,6 +17,7 @@ const DailyTasks = lazy(() => import('./pages/DailyTasks'))
 const LearningPath = lazy(() => import('./pages/LearningPath'))
 const Analytics = lazy(() => import('./pages/Analytics'))
 const Leaderboard = lazy(() => import('./pages/Leaderboard'))
+const DocumentReader = lazy(() => import('./pages/DocumentReader'))
 const ComponentTest = lazy(() => import('./pages/ComponentTest'))
 
 const routerFutureFlags = {
@@ -27,6 +29,7 @@ function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter future={routerFutureFlags}>
+        <ToastStack />
         <Suspense
           fallback={
             <div className="min-h-screen bg-raw-bg flex items-center justify-center">
@@ -59,6 +62,7 @@ function App() {
                 <Route path="path" element={<LearningPath />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="leaderboard" element={<Leaderboard />} />
+                <Route path="reader" element={<DocumentReader />} />
                 <Route path="test" element={<ComponentTest />} />
               </Route>
             </Route>

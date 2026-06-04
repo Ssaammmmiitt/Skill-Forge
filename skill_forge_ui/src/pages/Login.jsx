@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { useAuthStore } from '../store/useAuthStore'
 import { login } from '../api/auth'
 import { useGoogleSignIn } from '../hooks/useGoogleSignIn'
@@ -65,7 +66,12 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen bg-raw-bg flex flex-col">
+    <motion.div
+      className="min-h-screen bg-raw-bg flex flex-col"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
       <PublicHeader showAuthLinks={false} />
       <div className="flex flex-1 flex-col lg:flex-row">
       {/* Left Side - Hero Section */}
@@ -234,7 +240,7 @@ const Login = () => {
         </div>
       </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 

@@ -90,6 +90,7 @@ def test_log_activity_study(client):
     res_data = response.json()
     assert res_data["error"] is None
     assert res_data["data"]["delta"]["INT"] > 0
+    assert res_data["data"]["delta"]["energy"] < 0
     assert res_data["data"]["updated_attributes"]["INT"] > 50
 
 

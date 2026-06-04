@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { useAuthStore } from '../store/useAuthStore'
 import PublicHeader from '../components/layout/PublicHeader'
 import ButtonOffset from '../components/ui/ButtonOffset'
+import StaggerSection, { StaggerItem } from '../components/motion/StaggerSection'
 
 const Landing = () => {
   const navigate = useNavigate()
@@ -70,7 +72,12 @@ const Landing = () => {
   ]
 
   return (
-    <div className="min-h-screen bg-raw-bg">
+    <motion.div
+      className="min-h-screen bg-raw-bg"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.35 }}
+    >
       <PublicHeader />
       {/* Hero Section */}
       <div className="relative border-b-[5px] border-raw-border">
@@ -195,10 +202,10 @@ const Landing = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <StaggerSection className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature, index) => (
+            <StaggerItem key={index}>
             <div
-              key={index}
               className="border-[3px] border-raw-border p-6 bg-raw-surface 
                        hover:border-[5px] transition-all duration-150"
               style={{ borderRadius: '0px' }}
@@ -218,8 +225,9 @@ const Landing = () => {
                 {feature.description}
               </p>
             </div>
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerSection>
       </div>
 
       {/* How It Works */}
@@ -342,7 +350,7 @@ const Landing = () => {
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
