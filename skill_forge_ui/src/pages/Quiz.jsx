@@ -16,6 +16,8 @@ import ThemeToggle from '../components/ui/ThemeToggle'
 import { resolveStudentId } from '../utils/resolveStudentId'
 import GameMasterCard from '../components/gameMaster/GameMasterCard'
 
+const QUESTION_TIME_SECONDS = 15
+
 const QuizThemeFab = () => (
   <div className="fixed top-6 right-6 z-50">
     <ThemeToggle />
@@ -38,7 +40,7 @@ const Quiz = () => {
   const [streak, setStreak] = useState(0)
   const [xpEarned, setXpEarned] = useState(0)
   const [events, setEvents] = useState([])
-  const [timeLeft, setTimeLeft] = useState(30)
+  const [timeLeft, setTimeLeft] = useState(QUESTION_TIME_SECONDS)
   const [selectedIndex, setSelectedIndex] = useState(null)
   const [answers, setAnswers] = useState([])
   const [loading, setLoading] = useState(false)
@@ -105,7 +107,7 @@ const Quiz = () => {
       setAnswers([])
       setTotalTimeSeconds(0)
       setQuestionStartedAt(Date.now())
-      setTimeLeft(30)
+      setTimeLeft(QUESTION_TIME_SECONDS)
       setSelectedIndex(null)
     } catch (err) {
       setError(err.message || 'Failed to load quiz')
@@ -135,7 +137,7 @@ const Quiz = () => {
         questionXP = 50 + (Math.floor(timeLeft / 3) * 5)
         
         if (newStreak >= 3) newEvents.push(`STREAK ×${newStreak}`)
-        if (timeLeft > 25) newEvents.push('QUICK')
+        if (timeLeft >= 12) newEvents.push('QUICK')
         if (newStreak === 5) newEvents.push('PERFECT')
       } else {
         newStreak = 0
@@ -173,7 +175,7 @@ const Quiz = () => {
   const handleNext = () => {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(prev => prev + 1)
-      setTimeLeft(30)
+      setTimeLeft(QUESTION_TIME_SECONDS)
       setQuestionStartedAt(Date.now())
       setSelectedIndex(null)
       setPhase('question')
@@ -354,7 +356,7 @@ const Quiz = () => {
                   label="DIFFICULTY"
                   value={String(quizDifficulty).padStart(2, '0')}
                 />
-                <MetricArcade label="TIME/Q" value="30S" />
+                <MetricArcade label="TIME/Q" value="15S" />
               </div>
 
               <div className="flex flex-col items-center gap-2">
@@ -398,7 +400,7 @@ const Quiz = () => {
             </div>
             <div
               className={`border-[2px] md:border-[3px] border-dotted px-2 md:px-3 py-1 ${
-                timeLeft < 10 ? 'border-arcade-danger' : 'border-arcade-primary'
+                timeLeft <= 5 ? 'border-arcade-danger' : 'border-arcade-primary'
               }`}
               style={{ borderRadius: '0px' }}
             >
@@ -409,7 +411,7 @@ const Quiz = () => {
           </div>
 
           <div className="mb-4 md:mb-6">
-            <ProgressRaw value={(timeLeft / 30) * 100} />
+            <ProgressRaw value={(timeLeft / QUESTION_TIME_SECONDS) * 100} />
           </div>
 
           <div className="border-l-[4px] md:border-l-[6px] border-arcade-primary pl-4 md:pl-7 mt-4 md:mt-6 mb-6 md:mb-10">
@@ -431,12 +433,12 @@ const Quiz = () => {
                 `}
                 style={{ borderRadius: '0px' }}
               >
-                <span className="font-arcade text-[10px] md:text-[12px] text-arcade-primary mr-3 md:mr-5 min-w-[16px] md:min-w-[20px]">
+                <span className="font-arcade text-[12px] md:text-[14px] text-arcade-primary mr-3 md:mr-5 min-w-[18px] md:min-w-[22px] font-bold">
                   {String.fromCharCode(65 + index)}
                 </span>
                 <span
-                  className={`font-arcade text-[9px] md:text-[10px] tracking-[1px] leading-relaxed ${
-                    selectedIndex === index ? 'text-raw-white' : 'text-arcade-secondary'
+                  className={`font-arcade text-[12px] md:text-[14px] tracking-[1px] leading-relaxed ${
+                    selectedIndex === index ? 'text-raw-white font-bold' : 'text-arcade-secondary'
                   }`}
                 >
                   {option}
@@ -457,7 +459,7 @@ const Quiz = () => {
     return (
       <div className="min-h-screen bg-arcade-surface flex items-center justify-center px-4 md:px-8 py-6 md:py-8">
         <div className="text-center max-w-lg w-full">
-          <div className="font-arcade text-[10px] md:text-[12px] tracking-[2px] md:tracking-[3px] mb-4 md:mb-6">
+          <div className="font-arcade text-[14px] md:text-[16px] tracking-[2px] md:tracking-[3px] mb-4 md:mb-6 font-bold">
             {isTimeout ? '// TIME UP //' : (isCorrect ? '// CORRECT //' : '// WRONG //')}
             <span
               className={`ml-2 ${
@@ -488,7 +490,7 @@ const Quiz = () => {
             </div>
           </div>
 
-          <div className="font-arcade text-[18px] md:text-[22px] text-space-star tracking-[3px] md:tracking-[4px] mt-4 md:mt-6">
+          <div className="font-arcade text-[22px] md:text-[28px] text-space-star tracking-[3px] md:tracking-[4px] mt-4 md:mt-6 font-bold">
             +{String(lastAnswer._ui_xp ?? 0).padStart(3, '0')} XP
           </div>
 
@@ -501,9 +503,9 @@ const Quiz = () => {
           )}
 
           <div className="mt-6 md:mt-8">
-            <ButtonArcade size="md" onClick={handleNext}>
+            <ButtonOffset size="md" onClick={handleNext}>
               {currentIndex < questions.length - 1 ? 'NEXT QUESTION' : 'FINAL RESULTS'}
-            </ButtonArcade>
+            </ButtonOffset>
           </div>
         </div>
       </div>
@@ -545,30 +547,30 @@ const Quiz = () => {
     return (
       <div className="min-h-screen bg-arcade-surface flex flex-col items-center justify-start md:justify-center px-4 md:px-6 py-8 md:py-12 gap-6 md:gap-8">
         <div
-          className="border-[2px] md:border-[3px] border-dotted border-space-star max-w-lg w-full p-6 md:p-10 mt-8 md:mt-16"
+          className="border-[3px] md:border-[4px] border-dotted border-space-star max-w-xl w-full p-8 md:p-12 mt-8 md:mt-16"
           style={{ borderRadius: '0px' }}
         >
           <div className="text-center">
-            <div className="font-arcade text-[10px] md:text-[12px] text-arcade-secondary tracking-[3px] md:tracking-[4px] mb-4 md:mb-6">
+            <div className="font-arcade text-[12px] md:text-[14px] text-arcade-secondary tracking-[3px] md:tracking-[4px] mb-4 md:mb-6 font-bold">
               GAME OVER
             </div>
-            <h1 className="font-arcade text-[18px] md:text-[22px] text-space-star tracking-[3px] md:tracking-[4px] mb-6 md:mb-8">
+            <h1 className="font-arcade text-[26px] md:text-[32px] text-space-star tracking-[4px] md:tracking-[5px] mb-6 md:mb-8 font-bold">
               RESULTS
             </h1>
 
-            <div className="mb-4">
-              <MetricArcade label="FINAL SCORE" value={String(score).padStart(3, '0')} />
+            <div className="mb-5">
+              <MetricArcade large label="FINAL SCORE" value={String(score).padStart(3, '0')} />
             </div>
 
-            <div className="mt-4">
-              <MetricArcade label="XP EARNED" value={`+${xpEarned}`} />
+            <div className="mt-5">
+              <MetricArcade large label="XP EARNED" value={`+${xpEarned}`} />
             </div>
 
-            <div className="mt-5 md:mt-6">
-              <div className="font-arcade text-[7px] md:text-[8px] text-arcade-secondary tracking-[2px] uppercase">
+            <div className="mt-8 md:mt-10 border-t-[2px] border-dotted border-arcade-primary pt-6 md:pt-8">
+              <div className="font-arcade text-[10px] md:text-[12px] text-arcade-secondary tracking-[2px] uppercase font-bold">
                 ML LEARNING STYLE //
               </div>
-              <div className="font-arcade text-[10px] md:text-[12px] text-space-star tracking-[2px] md:tracking-[3px] mt-2">
+              <div className="font-arcade text-[16px] md:text-[20px] text-space-star tracking-[2px] md:tracking-[3px] mt-3 font-bold">
                 {(cognitiveResult?.predictions?.decision_tree ||
                   student?.learning_style ||
                   'UNKNOWN')
@@ -576,13 +578,13 @@ const Quiz = () => {
                   .toUpperCase()}
               </div>
               {cognitiveResult?.confidence > 0 && (
-                <div className="font-arcade text-[7px] md:text-[8px] text-arcade-secondary tracking-[1px] mt-2">
+                <div className="font-arcade text-[10px] md:text-[12px] text-arcade-secondary tracking-[1px] mt-3 font-bold">
                   CONFIDENCE {(cognitiveResult.confidence * 100).toFixed(0)}%
                   {cognitiveResult.model_agreement ? ' · MODELS AGREE' : ' · ENSEMBLE'}
                 </div>
               )}
               {cognitiveResult?.explanations?.length > 0 && (
-                <p className="font-arcade text-[6px] md:text-[7px] text-arcade-secondary mt-3 leading-relaxed">
+                <p className="font-body-space text-[12px] md:text-[14px] text-arcade-secondary mt-4 leading-relaxed max-w-md mx-auto">
                   {cognitiveResult.explanations[0]}
                 </p>
               )}

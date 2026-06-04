@@ -38,32 +38,32 @@ const Landing = () => {
 
   const features = [
     {
-      icon: '⚡',
+      code: 'ADP',
       title: 'ADAPTIVE DIFFICULTY',
       description: 'Questions automatically adjust based on your performance in real-time'
     },
     {
-      icon: '🧠',
+      code: 'COG',
       title: 'COGNITIVE TRACKING',
       description: 'Track INT, WIS, and energy attributes through your learning activities'
     },
     {
-      icon: '🤖',
+      code: 'ML',
       title: 'ML-POWERED INSIGHTS',
       description: 'Machine learning identifies your unique learning style and patterns'
     },
     {
-      icon: '📊',
+      code: 'ANL',
       title: 'REAL-TIME ANALYTICS',
       description: 'Comprehensive analytics dashboard with performance visualization'
     },
     {
-      icon: '🎯',
+      code: 'PTH',
       title: 'PERSONALIZED PATHS',
       description: 'Custom learning recommendations based on your progress and goals'
     },
     {
-      icon: '🏆',
+      code: 'XP',
       title: 'GAMIFIED PROGRESS',
       description: 'Earn XP, level up, maintain streaks, and compete on leaderboards'
     }
@@ -203,7 +203,14 @@ const Landing = () => {
                        hover:border-[5px] transition-all duration-150"
               style={{ borderRadius: '0px' }}
             >
-              <div className="text-[48px] mb-4">{feature.icon}</div>
+              <div
+                className="border-[3px] border-raw-border w-14 h-14 flex items-center justify-center mb-4 bg-raw-bg"
+                style={{ borderRadius: '0px' }}
+              >
+                <span className="font-raw text-raw-text text-[13px] tracking-[2px]">
+                  {feature.code}
+                </span>
+              </div>
               <h3 className="font-raw text-raw-text text-[16px] uppercase tracking-[2px] mb-3">
                 {feature.title}
               </h3>
