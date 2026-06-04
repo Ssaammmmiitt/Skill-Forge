@@ -1,9 +1,17 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import ButtonOffset from '../components/ui/ButtonOffset'
+import MarkdownContent from '../components/ui/MarkdownContent'
 import PageIntro from '../components/layout/PageIntro'
+import Spinner from '../components/ui/Spinner'
 import { useNotifStore } from '../store/useNotifStore'
-import { analyzeDocument } from '../api/reader'
+import { useStudentStore } from '../store/useStudentStore'
+import {
+  analyzeDocument,
+  generateDocumentQuiz,
+  saveDocumentQuizSession,
+} from '../api/reader'
 
 const ACCEPT =
   '.pdf,.docx,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation'
@@ -26,7 +34,9 @@ const STATUS_LABELS = {
 }
 
 const DocumentReader = () => {
+  const navigate = useNavigate()
   const addToast = useNotifStore((s) => s.addToast)
+  const student = useStudentStore((s) => s.student)
   const fileInputRef = useRef(null)
 
   const [file, setFile] = useState(null)
@@ -35,10 +45,30 @@ const DocumentReader = () => {
   const [uploadPercent, setUploadPercent] = useState(0)
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
+  const [quizLoading, setQuizLoading] = useState(false)
+  const [analyzePercent, setAnalyzePercent] = useState(0)
 
   useEffect(() => {
     document.title = 'SKILL FORGE // DOCUMENT READER'
   }, [])
+
+  // Smoothly tick up analyzePercent while the AI is generating
+  useEffect(() => {
+    if (status !== 'analyzing') {
+      setAnalyzePercent(0)
+      return
+    }
+    setAnalyzePercent(0)
+    const interval = setInterval(() => {
+      setAnalyzePercent(prev => {
+        // Slow down near 90 so it never looks "stuck" at 100 before done
+        if (prev >= 90) { clearInterval(interval); return 90 }
+        const step = prev < 60 ? 4 : prev < 80 ? 2 : 1
+        return Math.min(prev + step, 90)
+      })
+    }, 400)
+    return () => clearInterval(interval)
+  }, [status])
 
   const reset = () => {
     setFile(null)
@@ -115,11 +145,49 @@ const DocumentReader = () => {
     }
   }
 
+  const handleTakeQuiz = async () => {
+    if (!result?.content) {
+      addToast({ message: 'Generate study content first', type: 'error' })
+      return
+    }
+
+    setQuizLoading(true)
+    try {
+      const difficulty =
+        student?.suggested_difficulty ??
+        (Number(sessionStorage.getItem('sf_quiz_difficulty')) || 5)
+
+      const data = await generateDocumentQuiz(
+        result.content,
+        result.filename,
+        difficulty
+      )
+
+      saveDocumentQuizSession({
+        questions: data.questions,
+        filename: data.filename || result.filename,
+        difficulty: data.difficulty ?? difficulty,
+        source: 'document',
+      })
+
+      addToast({ message: 'Quiz ready — good luck!', type: 'success' })
+      navigate('/quiz', { state: { fromReader: true } })
+    } catch (err) {
+      const msg = err.message || 'Could not generate quiz'
+      addToast({ message: msg, type: 'error', duration: 8000 })
+    } finally {
+      setQuizLoading(false)
+    }
+  }
+
+  // uploading: 0→45% driven by XHR progress
+  // analyzing: 45→95% driven by simulated tick (analyzePercent 0→90 maps to 45→95)
+  // done: snap to 100%
   const progress =
     status === 'uploading'
       ? Math.min(uploadPercent, 45)
       : status === 'analyzing'
-        ? 45 + Math.min(uploadPercent || 50, 50)
+        ? 45 + Math.round(analyzePercent * 0.5)
         : status === 'done'
           ? 100
           : 0
@@ -138,7 +206,7 @@ const DocumentReader = () => {
           steps={[
             'Choose summary or detailed mode',
             `Upload PDF, DOCX, or PPTX (up to ${MAX_UPLOAD_MB} MB; files over ${COMPRESS_ABOVE_MB} MB auto-compress)`,
-            'Review extracted preview and generated study content',
+            'Review generated study content, then take a quiz to earn XP',
           ]}
         />
 
@@ -222,6 +290,7 @@ const DocumentReader = () => {
               <div className="h-2 bg-raw-bg border-[2px] border-raw-border">
                 <motion.div
                   className="h-full bg-raw-border"
+                  style={{ backgroundColor: 'var(--raw-border)'}}
                   initial={{ width: 0 }}
                   animate={{ width: `${progress}%` }}
                   transition={{ duration: 0.3 }}
@@ -293,8 +362,32 @@ const DocumentReader = () => {
               <p className="font-raw text-[12px] uppercase tracking-[2px] text-raw-text mb-4">
                 {result.mode === 'detailed' ? 'Detailed study guide' : 'Summary'}
               </p>
-              <div className="font-mono text-[13px] md:text-[14px] text-raw-text leading-relaxed whitespace-pre-wrap">
-                {result.content}
+              <MarkdownContent>{result.content}</MarkdownContent>
+
+              <div className="mt-8 pt-6 border-t-[2px] border-dotted border-raw-border">
+                <p className="font-raw text-[10px] uppercase tracking-[2px] text-raw-text-secondary mb-3">
+                  Test your understanding
+                </p>
+                <p className="font-mono text-[11px] text-raw-text-secondary leading-relaxed mb-4">
+                  Take a quiz based on this material. Questions are generated from your study
+                  content and scored like the main assessment — XP, streaks, adaptive difficulty,
+                  and learning-style updates all apply.
+                </p>
+                <ButtonOffset
+                  size="md"
+                  onClick={handleTakeQuiz}
+                  disabled={quizLoading}
+                >
+                  {quizLoading ? 'BUILDING QUIZ…' : 'TAKE QUIZ'}
+                </ButtonOffset>
+                {quizLoading && (
+                  <div className="flex items-center gap-3 mt-4">
+                    <Spinner variant="raw" size="sm" />
+                    <span className="font-mono text-[10px] text-raw-text-tertiary uppercase">
+                      Generating questions from your document…
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>

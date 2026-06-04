@@ -132,6 +132,9 @@ def build_cognitive_profile(
     topic_weakness = None
     if mistake_profile:
         topic_weakness = max(mistake_profile, key=mistake_profile.get)
+    # Fall back to the persisted value from the last quiz if no fresh data is available
+    if topic_weakness is None and hasattr(student, 'topic_weakness') and student.topic_weakness:
+        topic_weakness = student.topic_weakness
 
     last_score = latest_score if latest_score is not None else (ordered[-1].quiz_score if ordered else 0.0)
     last_time = (

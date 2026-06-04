@@ -9,7 +9,7 @@ const Modal = ({ open, onClose, title, system = 'star', children }) => {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: 'rgba(0,0,0,0.85)' }}
+      style={{ background: 'var(--raw-bg)', opacity: 0.85 }}
       onClick={onClose}
     >
       <div

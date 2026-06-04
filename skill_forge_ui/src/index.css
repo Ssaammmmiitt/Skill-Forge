@@ -149,3 +149,7 @@ body {
   background-color: var(--raw-bg);
   color: var(--raw-text);
 }
+
+button {
+  cursor: pointer;
+}

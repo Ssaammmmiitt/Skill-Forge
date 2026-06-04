@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../store/useAuthStore'
 import { useStudentStore } from '../store/useStudentStore'
 import { useNotifStore } from '../store/useNotifStore'
 import { getQuiz, submitQuiz } from '../api/quiz'
+import {
+  loadDocumentQuizSession,
+  clearDocumentQuizSession,
+} from '../api/reader'
 import ButtonOffset from '../components/ui/ButtonOffset'
 import MetricArcade from '../components/ui/MetricArcade'
 import BadgeArcade from '../components/ui/BadgeArcade'
@@ -46,6 +50,7 @@ const QuizPhase = ({ children, className = '' }) => (
 
 const Quiz = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const user = useAuthStore(state => state.user)
   const student = useStudentStore(state => state.student)
   const setStudent = useStudentStore(state => state.setStudent)
@@ -75,6 +80,45 @@ const Quiz = () => {
   const [questionStartedAt, setQuestionStartedAt] = useState(Date.now())
   const [cognitiveResult, setCognitiveResult] = useState(null)
   const [gameMasterResult, setGameMasterResult] = useState(null)
+  const [topic, setTopic] = useState(() => location.state?.topic || null)
+  const [documentQuiz, setDocumentQuiz] = useState(() => {
+    if (location.state?.fromReader) {
+      return loadDocumentQuizSession()
+    }
+    return null
+  })
+
+  // Synchronize state and reset quiz elements when location/navigation state changes
+  useEffect(() => {
+    const stateTopic = location.state?.topic || null
+    const fromReader = location.state?.fromReader || false
+
+    if (stateTopic) {
+      clearDocumentQuizSession()
+      setDocumentQuiz(null)
+      setTopic(stateTopic)
+      setPhase('start')
+      setQuestions([])
+      setError(null)
+    } else if (fromReader) {
+      const docQ = loadDocumentQuizSession()
+      setDocumentQuiz(docQ)
+      setTopic(null)
+      setPhase('start')
+      setQuestions([])
+      setError(null)
+    } else {
+      clearDocumentQuizSession()
+      setDocumentQuiz(null)
+      setTopic(null)
+      setPhase('start')
+      setQuestions([])
+      setError(null)
+    }
+  }, [location])
+
+  const isDocumentQuiz = Boolean(documentQuiz?.questions?.length)
+  const documentFilename = documentQuiz?.filename
 
   const currentQuestion = questions[currentIndex]
 
@@ -111,12 +155,19 @@ const Quiz = () => {
     setCognitiveResult(null)
     setGameMasterResult(null)
     const difficulty =
+      documentQuiz?.difficulty ??
       student?.suggested_difficulty ??
       (Number(sessionStorage.getItem('sf_quiz_difficulty')) || 5)
     setQuizDifficulty(difficulty)
     try {
-      const data = await getQuiz(difficulty)
-      setQuestions(data.questions || [])
+      if (isDocumentQuiz) {
+        setQuestions(documentQuiz.questions)
+      } else {
+        clearDocumentQuizSession()
+        setDocumentQuiz(null)
+        const data = await getQuiz(difficulty, topic)
+        setQuestions(data.questions || [])
+      }
       setPhase('question')
       setCurrentIndex(0)
       setScore(0)
@@ -317,7 +368,23 @@ const Quiz = () => {
     }
   }, [phase])
 
-  const goHome = () => navigate('/dashboard')
+  const goHome = () => {
+    if (isDocumentQuiz) {
+      navigate('/app/reader')
+      return
+    }
+    navigate('/dashboard')
+  }
+
+  const goStandardQuiz = () => {
+    clearDocumentQuizSession()
+    setDocumentQuiz(null)
+    setTopic(null)
+    setPhase('start')
+    setQuestions([])
+    setError(null)
+    navigate('/quiz', { replace: true, state: {} })
+  }
 
   const phaseKey =
     phase === 'question'
@@ -363,20 +430,31 @@ const Quiz = () => {
             SKILL FORGE
           </div>
           <h1 className="font-arcade text-[22px] md:text-[32px] text-space-star tracking-[3px] md:tracking-[4px] mb-2 md:mb-3">
-            ASSESSMENT
+            {isDocumentQuiz ? 'DOCUMENT QUIZ' : topic ? `PRACTICE: ${topic.toUpperCase()}` : 'ASSESSMENT'}
           </h1>
           <div className="font-arcade text-[10px] md:text-[12px] text-space-star tracking-[1px] md:tracking-[2px] mb-3 md:mb-4">
-            MODE // ADAPTIVE ML
+            {isDocumentQuiz
+              ? `SOURCE // ${(documentFilename || 'YOUR DOCUMENT').toUpperCase()}`
+              : topic
+                ? `FOCUS // ${topic.replace('_', ' ').toUpperCase()}`
+                : 'MODE // ADAPTIVE ML'}
           </div>
 
           <p className="font-body-space text-[13px] md:text-[16px] text-arcade-secondary leading-relaxed mt-2 max-w-md mx-auto px-1 md:px-2">
-            Five questions per run, drawn from a larger topic bank. Your speed, accuracy, and mistakes train the learning-style models—not the topic labels alone.
+            {isDocumentQuiz
+              ? 'Questions are drawn from the study content you just read. Same scoring rules apply — earn XP, build streaks, and update your learning profile.'
+              : topic
+                ? `Practice quiz focused specifically on ${topic.replace('_', ' ')}. Five questions per run, scored to help you improve your weakness.`
+                : 'Five questions per run, drawn from a larger topic bank. Your speed, accuracy, and mistakes train the learning-style models—not the topic labels alone.'}
           </p>
 
           <div className="border-b-[2px] md:border-b-[3px] border-dotted border-arcade-primary my-6 md:my-8" />
 
           <div className="grid grid-cols-3 gap-2 md:gap-5 mb-8 md:mb-10">
-            <MetricArcade label="QUESTIONS" value="05" />
+            <MetricArcade
+              label="QUESTIONS"
+              value={String(isDocumentQuiz ? documentQuiz.questions.length : 5).padStart(2, '0')}
+            />
             <MetricArcade
               label="DIFFICULTY"
               value={String(quizDifficulty).padStart(2, '0')}
@@ -391,6 +469,15 @@ const Quiz = () => {
             <span className="font-arcade text-[7px] md:text-[8px] text-arcade-secondary tracking-[1px] opacity-70">
               or press SPACEBAR
             </span>
+            {(isDocumentQuiz || topic) && (
+              <button
+                type="button"
+                onClick={goStandardQuiz}
+                className="font-arcade text-[7px] md:text-[8px] text-arcade-secondary tracking-[1px] mt-3 underline underline-offset-2 hover:text-space-star"
+              >
+                {isDocumentQuiz ? 'Switch to standard topic quiz' : 'Switch to standard adaptive quiz'}
+              </button>
+            )}
           </div>
         </div>
       </motion.div>
@@ -661,7 +748,7 @@ const Quiz = () => {
                   transition={{ delay: 0.42 }}
                 >
                   <BadgeArcade>STRONG PERFORMANCE</BadgeArcade>
-                  {correctCount === 5 && <BadgeArcade>PERFECT</BadgeArcade>}
+                  {correctCount === questions.length && <BadgeArcade>PERFECT</BadgeArcade>}
                 </motion.div>
               )}
 
@@ -678,6 +765,11 @@ const Quiz = () => {
                   <ButtonOffset size="md" onClick={() => navigate('/app/analytics')}>
                     VIEW STATS
                   </ButtonOffset>
+                  {isDocumentQuiz && (
+                    <ButtonOffset size="md" onClick={() => navigate('/app/reader')}>
+                      BACK TO READER
+                    </ButtonOffset>
+                  )}
                 </div>
               </motion.div>
             </div>
@@ -707,7 +799,7 @@ const Quiz = () => {
     <>
       <div className="relative min-h-screen bg-arcade-surface">
         <QuizThemeFab />
-        <QuizExitButton onClick={goHome} label="← HOME" />
+        <QuizExitButton onClick={goHome} label={isDocumentQuiz ? '← READER' : '← HOME'} />
         <AnimatePresence mode="wait">
           {phaseContent && (
             <QuizPhase key={phaseKey} className={phaseShellClass}>
@@ -721,7 +813,11 @@ const Quiz = () => {
       open={levelUpPending}
       onClose={() => {
         clearLevelUp()
-        if (phase === 'complete') navigate('/app/analytics')
+        if (phase === 'complete') {
+          if (isDocumentQuiz) navigate('/app/reader')
+          else if (topic) navigate('/quiz', { replace: true, state: {} })
+          else navigate('/app/analytics')
+        }
       }}
       system="arcade"
       title="LEVEL UP!"
@@ -739,9 +835,13 @@ const Quiz = () => {
         <div className="mt-6 border-[3px] border-dotted border-arcade-primary p-4 inline-block">
           <ButtonOffset size="md" onClick={() => {
             clearLevelUp()
-            if (phase === 'complete') navigate('/app/analytics')
+            if (phase === 'complete') {
+              if (isDocumentQuiz) navigate('/app/reader')
+              else if (topic) navigate('/quiz', { replace: true, state: {} })
+              else navigate('/app/analytics')
+            }
           }}>
-            CONTINUE
+            {isDocumentQuiz ? 'BACK TO READER' : topic ? 'BACK TO QUIZ' : 'VIEW ANALYTICS'}
           </ButtonOffset>
         </div>
       </div>

@@ -201,10 +201,10 @@ const DailyTasks = () => {
               {completedCount} / {total} done
             </span>
           </div>
-          <div className="h-3 bg-raw-bg border-[2px] border-raw-border">
+          <div className="h-3 bg-raw-bg border-[2px] border-raw-link">
             <div
               className="h-full bg-raw-border transition-all duration-300"
-              style={{ width: `${progress}%` }}
+              style={{ backgroundColor: 'var(--raw-border)', width: `${progress}%` }}
             />
           </div>
         </div>
@@ -285,8 +285,8 @@ const DailyTasks = () => {
                   </button>
                   <span
                     className={`flex-1 font-raw text-[11px] uppercase tracking-wide leading-relaxed ${todo.completed
-                        ? 'text-raw-text-tertiary line-through'
-                        : 'text-raw-text'
+                      ? 'text-raw-text-tertiary line-through'
+                      : 'text-raw-text'
                       }`}
                   >
                     {todo.label}

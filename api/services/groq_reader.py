@@ -11,12 +11,15 @@ PROMPTS = {
         "You are an educational assistant. Summarize the following document clearly for a "
         "student who wants to learn the material quickly. Use plain language, short paragraphs, "
         "and bullet points for key takeaways. Focus on main ideas, not minor details. "
-        "Do not invent facts not present in the source."
+        "Format your response in Markdown: use ## for section headings, **bold** for key terms, "
+        "and - for bullet lists. Do not invent facts not present in the source."
     ),
     "detailed": (
         "You are an educational assistant. Create a detailed, point-wise study guide from "
         "the following document. Use numbered sections and nested bullet points. Cover major "
         "topics, definitions, examples, and relationships. Make it suitable for exam review. "
+        "Format your response in Markdown: use ## and ### for section headings, **bold** for "
+        "important terms, numbered lists for sections, and - for bullet points. "
         "Be thorough but stay faithful to the source—do not add outside information."
     ),
 }

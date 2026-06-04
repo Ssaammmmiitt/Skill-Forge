@@ -26,6 +26,8 @@ from engine.cognitive import build_cognitive_profile
 from engine.game_master import build_game_master
 from engine.rewards import award_xp, update_streak
 
+from engine.quiz_shuffle import shuffle_question_pool
+
 from api.data.questions import QUESTIONS_BY_LEVEL, QUIZ_QUESTIONS_PER_SESSION
 
 router = APIRouter(prefix="/api", tags=["game"])
@@ -39,20 +41,43 @@ def _difficulty_to_level(difficulty: int) -> int:
     return 10
 
 
-def prepare_shuffled_questions(level):
+def prepare_shuffled_questions(level, topic: str | None = None):
+    if topic:
+        topic_lower = topic.lower().strip()
+        topic_pool = []
+        # First, collect questions of the exact topic and requested level
+        level_questions = [q for q in QUESTIONS_BY_LEVEL.get(level, []) if q.get("topic") == topic_lower]
+        topic_pool.extend(level_questions)
+        
+        # If we need more questions, collect from other levels
+        if len(topic_pool) < QUIZ_QUESTIONS_PER_SESSION:
+            other_levels = [l for l in QUESTIONS_BY_LEVEL.keys() if l != level]
+            # Sort other levels by absolute difference from requested level to get closest difficulty first
+            other_levels.sort(key=lambda l: abs(l - level))
+            for ol in other_levels:
+                ol_questions = [q for q in QUESTIONS_BY_LEVEL.get(ol, []) if q.get("topic") == topic_lower]
+                topic_pool.extend(ol_questions)
+                if len(topic_pool) >= QUIZ_QUESTIONS_PER_SESSION:
+                    break
+        
+        # If we found questions of this topic, use them
+        if topic_pool:
+            # Ensure unique questions by id
+            seen = set()
+            unique_pool = []
+            for q in topic_pool:
+                if q["id"] not in seen:
+                    unique_pool.append(q)
+                    seen.add(q["id"])
+            
+            count = min(QUIZ_QUESTIONS_PER_SESSION, len(unique_pool))
+            original_qs = random.sample(unique_pool, count)
+            return shuffle_question_pool(original_qs)
+
     pool = list(QUESTIONS_BY_LEVEL[level])
     count = min(QUIZ_QUESTIONS_PER_SESSION, len(pool))
     original_qs = random.sample(pool, count)
-    shuffled_qs = []
-    for q in original_qs:
-        copied_q = dict(q)
-        options = list(copied_q["options"])
-        correct_option = options[copied_q["correct_index"]]
-        random.shuffle(options)
-        copied_q["options"] = options
-        copied_q["correct_index"] = options.index(correct_option)
-        shuffled_qs.append(copied_q)
-    return shuffled_qs
+    return shuffle_question_pool(original_qs)
 
 
 class LogActivityBody(BaseModel):
@@ -169,12 +194,12 @@ def log_activity(body: LogActivityBody, conn: DbConn):
 
 
 @router.get("/quiz/{difficulty}")
-def get_quiz(difficulty: int):
+def get_quiz(difficulty: int, topic: str | None = Query(default=None)):
     if difficulty < 1 or difficulty > 10:
         return error("Difficulty must be between 1 and 10", 400)
 
     level = _difficulty_to_level(difficulty)
-    questions = prepare_shuffled_questions(level)
+    questions = prepare_shuffled_questions(level, topic)
     return success({"questions": questions, "difficulty": difficulty})
 
 
@@ -268,6 +293,10 @@ def submit_quiz(body: QuizSubmitBody, conn: DbConn):
         quiz_answers=body.answers,
     )
     student.learning_style = cognitive["learning_style"]
+    # Persist the computed topic weakness so the dashboard shows the same value
+    topic_weakness = cognitive["behavioral"].get("topic_weakness")
+    if topic_weakness:
+        student.topic_weakness = topic_weakness
     game_master = build_game_master(cognitive)
 
     update_student(conn, student)

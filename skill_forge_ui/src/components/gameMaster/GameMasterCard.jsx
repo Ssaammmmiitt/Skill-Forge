@@ -3,6 +3,7 @@ import CardStar from '../ui/CardStar'
 import BadgeStar from '../ui/BadgeStar'
 import ButtonStar from '../ui/ButtonStar'
 import ButtonArcade from '../ui/ButtonArcade'
+import ButtonOffset from '../ui/ButtonOffset'
 import MetricStar from '../ui/MetricStar'
 
 /**
@@ -68,6 +69,48 @@ const GameMasterCard = ({ gameMaster, variant = 'star', compact = false }) => {
         {gameMaster.focus}
       </p>
 
+      {gameMaster.topic_weakness && (
+        <div
+          className={
+            variant === 'arcade'
+              ? 'flex items-center justify-between gap-3 border border-dotted border-arcade-danger px-3 py-2 mb-3 md:mb-4'
+              : 'flex items-center justify-between gap-3 border border-dotted border-space-error px-3 py-2 rounded mb-4 md:mb-5'
+          }
+        >
+          <div>
+            <span
+              className={
+                variant === 'arcade'
+                  ? 'font-arcade text-[8px] text-arcade-secondary tracking-[2px] uppercase block mb-0.5'
+                  : 'font-space text-[10px] uppercase tracking-widest text-space-nebula block mb-0.5'
+              }
+            >
+              WEAK TOPIC
+            </span>
+            <span
+              className={
+                variant === 'arcade'
+                  ? 'font-arcade text-[11px] text-space-error tracking-[1px] uppercase'
+                  : 'font-space font-bold text-[15px] text-space-error capitalize'
+              }
+            >
+              {gameMaster.topic_weakness.replace(/_/g, ' ')}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/quiz', { state: { topic: gameMaster.topic_weakness } })}
+            className={
+              variant === 'arcade'
+                ? 'font-arcade text-[8px] text-space-star hover:text-arcade-primary underline underline-offset-2 whitespace-nowrap'
+                : 'font-space text-[12px] text-space-star hover:text-space-nebula underline underline-offset-2 whitespace-nowrap'
+            }
+          >
+            Practice now →
+          </button>
+        </div>
+      )}
+
       <div
         className={`grid gap-2 md:gap-4 mb-4 ${compact ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'
           }`}
@@ -102,12 +145,16 @@ const GameMasterCard = ({ gameMaster, variant = 'star', compact = false }) => {
         </ul>
       )}
 
-      <ActionBtn
+      <ButtonOffset
         size={compact ? 'sm' : 'md'}
-        onClick={() => navigate(gameMaster.action_route || '/quiz')}
+        onClick={() => {
+          const route = gameMaster.action_route || '/quiz'
+          const state = gameMaster.topic_weakness ? { topic: gameMaster.topic_weakness } : {}
+          navigate(route, { state })
+        }}
       >
-        {gameMaster.action_label || 'Start quiz'}
-      </ActionBtn>
+        {gameMaster.action_label || 'START QUIZ'}
+      </ButtonOffset>
     </Wrapper>
   )
 }

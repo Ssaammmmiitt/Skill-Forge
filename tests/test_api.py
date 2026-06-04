@@ -276,3 +276,24 @@ def test_username_suggestions(client):
     res_data = response.json()
     assert res_data["error"] is None
     assert len(res_data["data"]["suggestions"]) > 0
+
+
+def test_get_quiz_with_topic(client):
+    # Test valid topic filtering
+    response = client.get("/api/quiz/5?topic=physics")
+    assert response.status_code == 200
+    res_data = response.json()
+    assert res_data["error"] is None
+    questions = res_data["data"]["questions"]
+    assert len(questions) == 5
+    # Verify that it filtered and prioritized physics questions
+    # Note: Physics questions exist, so at least some should be physics (our backend pulls and shuffles)
+    physics_questions = [q for q in questions if q["topic"] == "physics"]
+    assert len(physics_questions) > 0
+
+    # Test fallback behavior with a nonexistent topic
+    response = client.get("/api/quiz/5?topic=nonexistent")
+    assert response.status_code == 200
+    res_data = response.json()
+    assert res_data["error"] is None
+    assert len(res_data["data"]["questions"]) == 5

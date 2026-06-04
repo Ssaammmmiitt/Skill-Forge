@@ -19,6 +19,7 @@ class Student:
     level: int = 1
     learning_style: str = "unknown"
     streak: int = 0
+    topic_weakness: str | None = None
     created_at: str = dataclasses.field(
         default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat()
     )
@@ -89,9 +90,16 @@ def create_tables(conn: sqlite3.Connection) -> None:
             level INTEGER NOT NULL,
             learning_style TEXT NOT NULL,
             streak INTEGER NOT NULL,
+            topic_weakness TEXT DEFAULT NULL,
             created_at TEXT NOT NULL
         )
     """)
+    # Add topic_weakness column to existing databases that don't have it yet
+    try:
+        conn.execute("ALTER TABLE students ADD COLUMN topic_weakness TEXT DEFAULT NULL")
+        conn.commit()
+    except Exception:
+        pass  # Column already exists
     conn.execute("""
         CREATE TABLE IF NOT EXISTS sessions (
             session_id TEXT PRIMARY KEY,
@@ -193,6 +201,7 @@ def get_student_by_id(conn: sqlite3.Connection, student_id: str) -> Student | No
         level=row["level"],
         learning_style=row["learning_style"],
         streak=row["streak"],
+        topic_weakness=row["topic_weakness"] if "topic_weakness" in row.keys() else None,
         created_at=row["created_at"],
     )
 
@@ -323,7 +332,7 @@ def update_student(conn: sqlite3.Connection, student: Student) -> None:
 
     conn.execute("""
         UPDATE students
-        SET INT = ?, WIS = ?, energy = ?, xp = ?, level = ?, learning_style = ?, streak = ?
+        SET INT = ?, WIS = ?, energy = ?, xp = ?, level = ?, learning_style = ?, streak = ?, topic_weakness = ?
         WHERE student_id = ?
     """, (
         student.INT,
@@ -333,6 +342,7 @@ def update_student(conn: sqlite3.Connection, student: Student) -> None:
         student.level,
         student.learning_style,
         student.streak,
+        student.topic_weakness,
         student.student_id,
     ))
 

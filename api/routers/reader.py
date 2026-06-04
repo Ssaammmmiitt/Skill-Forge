@@ -1,15 +1,42 @@
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
+from pydantic import BaseModel, Field
 
 from api.deps import get_current_user_id
 from api.exceptions import ApiError
 from api.responses import success
+from api.services.groq_quiz import generate_document_quiz
 from api.services.groq_reader import generate_study_content
 from engine.document_extract import extract_text
 from engine.file_compress import prepare_upload
+from engine.quiz_shuffle import shuffle_question_pool
 
 router = APIRouter(prefix="/api/reader", tags=["reader"])
+
+
+class DocumentQuizBody(BaseModel):
+    content: str = Field(..., min_length=80)
+    filename: str = Field(default="document.pdf")
+    difficulty: int = Field(default=5, ge=1, le=10)
+
+
+@router.post("/quiz")
+def create_document_quiz(
+    body: DocumentQuizBody,
+    _user_id: Annotated[str, Depends(get_current_user_id)],
+):
+    questions = generate_document_quiz(body.content, body.filename)
+    shuffled = shuffle_question_pool(questions)
+    return success(
+        {
+            "questions": shuffled,
+            "difficulty": body.difficulty,
+            "filename": body.filename,
+            "source": "document",
+            "question_count": len(shuffled),
+        }
+    )
 
 
 @router.post("/analyze")

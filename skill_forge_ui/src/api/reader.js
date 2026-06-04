@@ -35,3 +35,46 @@ export const analyzeDocument = async (file, mode, onUploadProgress) => {
   }
   return body?.data ?? body
 }
+
+/**
+ * Generate quiz questions from document study content.
+ * @param {string} content - Generated study content (markdown)
+ * @param {string} filename
+ * @param {number} [difficulty=5]
+ */
+export const generateDocumentQuiz = async (content, filename, difficulty = 5) => {
+  const token = localStorage.getItem('sf_token')
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  const response = await axios.post(
+    `${baseURL}/reader/quiz`,
+    { content, filename, difficulty },
+    { headers, timeout: 120000 }
+  )
+
+  const body = response.data
+  if (body?.error) {
+    throw new Error(body.error)
+  }
+  return body?.data ?? body
+}
+
+export const DOCUMENT_QUIZ_STORAGE_KEY = 'sf_document_quiz'
+
+export const saveDocumentQuizSession = (payload) => {
+  sessionStorage.setItem(DOCUMENT_QUIZ_STORAGE_KEY, JSON.stringify(payload))
+}
+
+export const loadDocumentQuizSession = () => {
+  try {
+    const raw = sessionStorage.getItem(DOCUMENT_QUIZ_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+export const clearDocumentQuizSession = () => {
+  sessionStorage.removeItem(DOCUMENT_QUIZ_STORAGE_KEY)
+}
