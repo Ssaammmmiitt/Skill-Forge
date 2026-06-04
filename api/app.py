@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from api.exceptions import ApiError
 from api.responses import error
-from api.routers import auth, game, todos
+from api.routers import auth, game, ml, todos
 from data.models import create_tables, get_db
 
 
@@ -52,6 +52,7 @@ def create_app() -> FastAPI:
 
     app.include_router(auth.router)
     app.include_router(game.router)
+    app.include_router(ml.router)
     app.include_router(todos.router)
 
     return app

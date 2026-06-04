@@ -12,7 +12,7 @@ Skill Forge is an **AI adaptive learning prototype**, not a full LMS or document
 
 ## Quizzes
 
-- **36+ questions** in three difficulty bands (beginner / intermediate / advanced).
+- **72 questions** in three difficulty bands (24 beginner / 24 intermediate / 24 advanced).
 - Each session **randomly picks 5** from the pool so repeats feel different.
 - Topics: math, science, geography, literature, history, CS, etc.
 - Questions live in `api/data/questions.py` — add more dict entries anytime.

@@ -239,6 +239,31 @@ def test_cognitive_profile(client):
     assert "behavioral" in data
     assert "learning_path" in data
     assert "confidence" in data
+    assert "game_master" in data
+    assert data["game_master"]["title"] == "GAME MASTER"
+
+
+def test_analytics_behavioral_and_game_master(client):
+    response = client.get("/api/analytics/fixture_id")
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert "game_master" in data
+    assert "focus" in data["game_master"]
+    metrics = data["behavioral_metrics"]
+    assert isinstance(metrics["table"], list)
+    assert len(metrics["table"]) >= 1
+    assert isinstance(metrics["chart"], list)
+    assert "summary" in metrics
+
+
+def test_ml_comparison_unavailable_without_csv(client):
+    response = client.get("/api/ml/comparison")
+    if response.status_code == 200:
+        data = response.json()["data"]
+        assert "models" in data
+        assert isinstance(data["models"], list)
+    else:
+        assert response.status_code == 503
 
 
 def test_username_suggestions(client):

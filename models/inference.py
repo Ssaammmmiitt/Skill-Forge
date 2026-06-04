@@ -3,6 +3,7 @@ import pickle
 from typing import Any
 
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 
@@ -79,7 +80,8 @@ class ModelRegistry:
         difficulty: float,
     ) -> dict[str, Any]:
         raw = session_to_feature_row(quiz_score, time_taken, mistakes, difficulty)
-        return self._predict_scaled(self.scaler.transform(raw), raw[0])
+        raw_df = pd.DataFrame(raw, columns=ML_FEATURE_NAMES)
+        return self._predict_scaled(self.scaler.transform(raw_df), raw[0])
 
     def _predict_scaled(self, scaled: np.ndarray, raw_row: np.ndarray) -> dict[str, Any]:
         if not self.ready:

@@ -13,6 +13,7 @@ import Spinner from '../components/ui/Spinner'
 import Modal from '../components/ui/Modal'
 import ThemeToggle from '../components/ui/ThemeToggle'
 import { resolveStudentId } from '../utils/resolveStudentId'
+import GameMasterCard from '../components/gameMaster/GameMasterCard'
 
 const QuizThemeFab = () => (
   <div className="fixed top-6 right-6 z-50">
@@ -50,6 +51,7 @@ const Quiz = () => {
   const [totalTimeSeconds, setTotalTimeSeconds] = useState(0)
   const [questionStartedAt, setQuestionStartedAt] = useState(Date.now())
   const [cognitiveResult, setCognitiveResult] = useState(null)
+  const [gameMasterResult, setGameMasterResult] = useState(null)
 
   const currentQuestion = questions[currentIndex]
 
@@ -84,6 +86,7 @@ const Quiz = () => {
     setLoading(true)
     setError(null)
     setCognitiveResult(null)
+    setGameMasterResult(null)
     const difficulty =
       student?.suggested_difficulty ??
       (Number(sessionStorage.getItem('sf_quiz_difficulty')) || 5)
@@ -205,6 +208,9 @@ const Quiz = () => {
 
       if (result.cognitive) {
         setCognitiveResult(result.cognitive)
+      }
+      if (result.game_master) {
+        setGameMasterResult(result.game_master)
       }
 
       const oldLevel = student?.level || 1
@@ -516,7 +522,7 @@ const Quiz = () => {
     }
 
     return (
-      <div className="min-h-screen bg-arcade-surface flex items-center justify-center px-6 py-12">
+      <div className="min-h-screen bg-arcade-surface flex flex-col items-center justify-center px-6 py-12 gap-8">
         <div
           className="border-[3px] border-dotted border-space-star max-w-lg w-full p-10 mt-16"
           style={{ borderRadius: '0px' }}
@@ -577,6 +583,17 @@ const Quiz = () => {
               </ButtonStar>
             </div>
           </div>
+        </div>
+
+        <div className="max-w-lg w-full">
+          <div className="font-arcade text-[8px] text-arcade-secondary tracking-[3px] mb-3 text-center">
+            GAME MASTER //
+          </div>
+          <GameMasterCard
+            gameMaster={gameMasterResult}
+            variant="arcade"
+            compact
+          />
         </div>
       </div>
     )

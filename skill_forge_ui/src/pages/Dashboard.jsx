@@ -11,11 +11,12 @@ import Spinner from '../components/ui/Spinner'
 import { getLevelInfo } from '../utils/formatters'
 import { XP_PER_LEVEL } from '../utils/constants'
 import PageIntro from '../components/layout/PageIntro'
+import GameMasterCard from '../components/gameMaster/GameMasterCard'
 
 const Dashboard = () => {
   const navigate = useNavigate()
   const { student, loading: studentLoading } = useStudent()
-  const { analytics, loading: analyticsLoading } = useAnalytics()
+  const { analytics } = useAnalytics()
 
   // Document title
   useEffect(() => {
@@ -87,6 +88,19 @@ const Dashboard = () => {
           purpose="Your command center: quick stats, recent quiz performance, and shortcuts. Start here after login."
           steps={['Take a quiz for ML insights', 'Log daily habits', 'Check Analytics and Learning Path']}
         />
+      </section>
+
+      {/* GAME MASTER */}
+      <section className="bg-space-deep px-16 py-8 pt-0">
+        <div className="font-raw text-raw-white text-[10px] uppercase tracking-[3px] mb-4">
+          GAME MASTER
+        </div>
+        <div className="max-w-3xl">
+          <GameMasterCard
+            gameMaster={analytics?.game_master}
+            variant="star"
+          />
+        </div>
       </section>
 
       {/* STAT CARDS ROW - StarChart cosmic metrics */}

@@ -114,7 +114,7 @@ const Profile = () => {
         <div className="border-b border-space-overlay" />
 
         {/* SECTION 3: COGNITIVE ATTRIBUTES */}
-        <section className="py-20">
+        <section className="py-20 pb-24">
           <div className="mb-10">
             <h2 className="font-space font-bold text-[28px] text-raw-white">
               Cognitive Attributes

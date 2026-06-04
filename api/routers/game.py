@@ -18,7 +18,9 @@ from data.models import (
 )
 from engine.adaptive import adjust_difficulty
 from engine.attributes import get_attribute_delta, update_attributes
+from engine.behavioral_metrics import build_behavioral_metrics
 from engine.cognitive import build_cognitive_profile
+from engine.game_master import build_game_master
 from engine.rewards import award_xp, update_streak
 
 from api.data.questions import QUESTIONS_BY_LEVEL, QUIZ_QUESTIONS_PER_SESSION
@@ -225,6 +227,7 @@ def submit_quiz(body: QuizSubmitBody, conn: DbConn):
         quiz_answers=body.answers,
     )
     student.learning_style = cognitive["learning_style"]
+    game_master = build_game_master(cognitive)
 
     update_student(conn, student)
     conn.commit()
@@ -238,6 +241,7 @@ def submit_quiz(body: QuizSubmitBody, conn: DbConn):
             "new_difficulty": new_difficulty,
             "learning_style": student.learning_style,
             "learning_path": cognitive["learning_path"],
+            "game_master": game_master,
             "cognitive": {
                 "confidence": cognitive["confidence"],
                 "model_agreement": cognitive["model_agreement"],
@@ -259,6 +263,7 @@ def get_cognitive_profile(student_id: str, conn: DbConn):
 
     sessions = get_sessions_by_student(conn, student_id)
     profile = build_cognitive_profile(student, sessions)
+    profile["game_master"] = build_game_master(profile)
     return success(profile)
 
 
@@ -290,43 +295,19 @@ def get_leaderboard(
     return success({"leaderboard": leaderboard})
 
 
-@router.get("/analytics/{student_id}")
-def get_analytics(student_id: str, conn: DbConn):
-    student = get_student_by_id(conn, student_id)
-    if student is None:
-        return error("Student not found", 404)
-
-    sessions = get_sessions_by_student(conn, student_id)
-    cognitive = build_cognitive_profile(student, sessions)
-
-    if len(sessions) < 2:
-        return success(
-            {
-                "score_trend": [],
-                "difficulty_trend": [],
-                "time_trend": [],
-                "style_history": cognitive["style_history"],
-                "consistency_score": cognitive["behavioral"]["consistency_score"],
-                "radar": {
-                    "INT": student.INT,
-                    "WIS": student.WIS,
-                    "energy": student.energy,
-                    "xp_normalized": min(100, student.xp // 10),
-                    "level_normalized": min(100, student.level * 10),
-                },
-                "cognitive_summary": {
-                    "learning_style": cognitive["learning_style"],
-                    "confidence": cognitive["confidence"],
-                    "pace_score": cognitive["behavioral"]["pace_score"],
-                },
-            }
-        )
-
-    sessions_sorted = sorted(sessions, key=lambda s: s.timestamp)
-
-    score_trend = [s.quiz_score for s in sessions_sorted[-10:]]
-    difficulty_trend = [s.difficulty for s in sessions_sorted[-10:]]
-    time_trend = [s.time_taken for s in sessions_sorted[-10:]]
+def _analytics_payload(student, sessions: list, cognitive: dict) -> dict:
+    behavioral_export = build_behavioral_metrics(student, sessions, cognitive)
+    game_master = build_game_master(cognitive)
+    cognitive_summary = {
+        "learning_style": cognitive["learning_style"],
+        "confidence": cognitive["confidence"],
+        "model_agreement": cognitive.get("model_agreement", False),
+        "explanations": cognitive.get("explanations", []),
+        "probabilities": cognitive.get("probabilities", {}),
+        "topic_weakness": cognitive["behavioral"]["topic_weakness"],
+        "pace_score": cognitive["behavioral"]["pace_score"],
+        "score_velocity": cognitive["behavioral"]["score_velocity"],
+    }
 
     radar = {
         "INT": student.INT,
@@ -338,24 +319,41 @@ def get_analytics(student_id: str, conn: DbConn):
         "consistency_score": int(cognitive["behavioral"]["consistency_score"]),
     }
 
-    return success(
-        {
-            "score_trend": score_trend,
-            "difficulty_trend": difficulty_trend,
-            "time_trend": time_trend,
+    if len(sessions) < 2:
+        return {
+            "score_trend": [],
+            "difficulty_trend": [],
+            "time_trend": [],
             "style_history": cognitive["style_history"],
             "consistency_score": cognitive["behavioral"]["consistency_score"],
             "radar": radar,
-            "cognitive_summary": {
-                "learning_style": cognitive["learning_style"],
-                "confidence": cognitive["confidence"],
-                "model_agreement": cognitive["model_agreement"],
-                "explanations": cognitive["explanations"],
-                "probabilities": cognitive["probabilities"],
-                "topic_weakness": cognitive["behavioral"]["topic_weakness"],
-                "pace_score": cognitive["behavioral"]["pace_score"],
-                "score_velocity": cognitive["behavioral"]["score_velocity"],
-            },
+            "cognitive_summary": cognitive_summary,
             "learning_path": cognitive["learning_path"],
+            "game_master": game_master,
+            "behavioral_metrics": behavioral_export,
         }
-    )
+
+    sessions_sorted = sorted(sessions, key=lambda s: s.timestamp)
+    return {
+        "score_trend": [s.quiz_score for s in sessions_sorted[-10:]],
+        "difficulty_trend": [s.difficulty for s in sessions_sorted[-10:]],
+        "time_trend": [s.time_taken for s in sessions_sorted[-10:]],
+        "style_history": cognitive["style_history"],
+        "consistency_score": cognitive["behavioral"]["consistency_score"],
+        "radar": radar,
+        "cognitive_summary": cognitive_summary,
+        "learning_path": cognitive["learning_path"],
+        "game_master": game_master,
+        "behavioral_metrics": behavioral_export,
+    }
+
+
+@router.get("/analytics/{student_id}")
+def get_analytics(student_id: str, conn: DbConn):
+    student = get_student_by_id(conn, student_id)
+    if student is None:
+        return error("Student not found", 404)
+
+    sessions = get_sessions_by_student(conn, student_id)
+    cognitive = build_cognitive_profile(student, sessions)
+    return success(_analytics_payload(student, sessions, cognitive))

@@ -9,6 +9,9 @@ import MetricStar from '../components/ui/MetricStar'
 import Spinner from '../components/ui/Spinner'
 import ButtonStar from '../components/ui/ButtonStar'
 import { Link } from 'react-router-dom'
+import GameMasterCard from '../components/gameMaster/GameMasterCard'
+import BehavioralMetricsSection from '../components/analytics/BehavioralMetricsSection'
+import ModelComparisonSection from '../components/analytics/ModelComparisonSection'
 
 const Analytics = () => {
   const { analytics, loading, error, refetch } = useAnalytics()
@@ -87,6 +90,28 @@ const Analytics = () => {
             </Link>
           </CardStar>
         )}
+
+        <section className="mb-12">
+          <h2 className="font-space font-bold text-[28px] text-raw-white mb-2">
+            Game Master
+          </h2>
+          <p className="font-body-space text-[14px] text-space-nebula mb-6">
+            Personalized next steps from your latest ML profile and learning path.
+          </p>
+          <GameMasterCard gameMaster={analytics.game_master} variant="star" />
+        </section>
+
+        <div className="border-t border-space-overlay my-12" />
+
+        <BehavioralMetricsSection
+          behavioralMetrics={analytics.behavioral_metrics}
+        />
+
+        <div className="border-t border-space-overlay my-12" />
+
+        <ModelComparisonSection />
+
+        <div className="border-t border-space-overlay my-12" />
 
         {summary && (
           <section className="mb-12">
