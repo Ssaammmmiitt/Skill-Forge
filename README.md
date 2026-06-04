@@ -12,12 +12,12 @@
 
 Skill Forge is an adaptive learning platform that gamifies education through:
 
-- **RPG-style Attributes** — INT, WIS, energy, XP, and leveling system
-- **Adaptive Quiz System** — Difficulty adjusts based on performance
-- **ML-Powered Personalization** — Predicts learning styles using decision trees and neural networks
-- **Interactive Learning Path** — 3D skill constellation with real-time progress tracking
-- **Gamification** — Streaks, achievements, leaderboards, and XP rewards
-- **Unique UI Design** — FUSION design system: RawBlock (brutalism) + StarChart (cosmic) + Arcade (retro)
+- **RPG-style Attributes** - INT, WIS, energy, XP, and leveling system
+- **Adaptive Quiz System** - Difficulty adjusts based on performance
+- **ML-Powered Personalization** - Predicts learning styles using decision trees and neural networks
+- **Interactive Learning Path** - 3D skill constellation with real-time progress tracking
+- **Gamification** - Streaks, achievements, leaderboards, and XP rewards
+- **Unique UI Design** - FUSION design system: RawBlock (brutalism) + StarChart (cosmic) + Arcade (retro)
 
 ---
 
@@ -95,10 +95,10 @@ Frontend runs at **http://localhost:5173** (or next available port)
 2. Register a new account (email + username + password)
 3. Complete a quiz to unlock the dashboard
 4. Explore:
-   - **Dashboard** — Overview with collision design
-   - **Learning Path** — Interactive 3D skill constellation
-   - **Analytics** — Performance trends and learning style insights
-   - **Leaderboard** — Compete with other students
+   - **Dashboard** - Overview with collision design
+   - **Learning Path** - Interactive 3D skill constellation
+   - **Analytics** - Performance trends and learning style insights
+   - **Leaderboard** - Compete with other students
 
 ---
 
@@ -165,20 +165,20 @@ Skill-Forge/
 
 ### 🎮 Gamification System
 
-- **XP & Leveling** — Earn XP from quizzes, level up, and track progress
-- **Attributes** — INT, WIS, and Energy that affect learning outcomes
-- **Streaks** — Maintain daily quiz streaks for bonus rewards
-- **Achievements** — Unlock milestones as you progress
-- **Leaderboard** — Compete globally on XP, INT, or WIS
+- **XP & Leveling** - Earn XP from quizzes, level up, and track progress
+- **Attributes** - INT, WIS, and Energy that affect learning outcomes
+- **Streaks** - Maintain daily quiz streaks for bonus rewards
+- **Achievements** - Unlock milestones as you progress
+- **Leaderboard** - Compete globally on XP, INT, or WIS
 
 ### 🧠 Adaptive Learning
 
-- **Dynamic Difficulty** — Quiz difficulty adjusts based on performance
-- **Learning Style Prediction** — ML models identify your learning patterns
-- **Personalized Recommendations** — Skill suggestions based on current progress
-- **Progress Tracking** — Detailed analytics on trends and consistency
+- **Dynamic Difficulty** - Quiz difficulty adjusts based on performance
+- **Learning Style Prediction** - ML models identify your learning patterns
+- **Personalized Recommendations** - Skill suggestions based on current progress
+- **Progress Tracking** - Detailed analytics on trends and consistency
 
-### 🎨 Design System — SYSTEM//FUSION
+### 🎨 Design System - SYSTEM//FUSION
 
 Three distinct design languages in deliberate tension:
 
@@ -199,27 +199,27 @@ Three distinct design languages in deliberate tension:
 
 ### 🛣️ Interactive Learning Path
 
-- **3D Skill Constellation** — Mouse-controlled rotation with CSS 3D transforms
-- **Visual Dependencies** — Connection lines show prerequisite skills
-- **Status Indicators** — Color-coded mastery levels (Locked → Started → Learning → Mastered)
-- **Achievement Notifications** — Animated pop-ups for milestones
-- **Skill Recommendations** — AI-driven suggestions for next steps
-- **Tutorial Overlay** — First-time user onboarding
+- **3D Skill Constellation** - Mouse-controlled rotation with CSS 3D transforms
+- **Visual Dependencies** - Connection lines show prerequisite skills
+- **Status Indicators** - Color-coded mastery levels (Locked → Started → Learning → Mastered)
+- **Achievement Notifications** - Animated pop-ups for milestones
+- **Skill Recommendations** - AI-driven suggestions for next steps
+- **Tutorial Overlay** - First-time user onboarding
 
 ### 🔐 Authentication
 
-- **Email/Password** — Secure bcrypt hashing
-- **Google OAuth** — One-click sign-in
-- **Username System** — Unique usernames with smart suggestions
-- **JWT Tokens** — 24-hour expiry with automatic refresh
-- **Protected Routes** — Client-side route guards
+- **Email/Password** - Secure bcrypt hashing
+- **Google OAuth** - One-click sign-in
+- **Username System** - Unique usernames with smart suggestions
+- **JWT Tokens** - 24-hour expiry with automatic refresh
+- **Protected Routes** - Client-side route guards
 
 ### 📊 Analytics & Insights
 
-- **Performance Trends** — XP, score, and difficulty over time
-- **Learning Style History** — Track how your style evolves
-- **Consistency Metrics** — Quiz frequency and streak tracking
-- **Skill Radar** — Visual breakdown of attribute mastery
+- **Performance Trends** - XP, score, and difficulty over time
+- **Learning Style History** - Track how your style evolves
+- **Consistency Metrics** - Quiz frequency and streak tracking
+- **Skill Radar** - Visual breakdown of attribute mastery
 
 ---
 
@@ -330,7 +330,7 @@ python -m api.app  # Recreates tables
 ### ML Model Training (required before ensemble inference)
 
 ```bash
-# From repo root — trains DT + NN and writes reports/
+# From repo root - trains DT + NN and writes reports/
 python scripts/setup_ml.py
 ```
 
@@ -437,10 +437,10 @@ This project is licensed under the MIT License. See `LICENSE` file for details.
 
 ## Acknowledgments
 
-- **Design System** — Inspired by brutalism, space aesthetics, and retro gaming
-- **ML Models** — Built with scikit-learn and PyTorch
-- **UI Framework** — React ecosystem with Vite, Tailwind, and Framer Motion
-- **Backend** — FastAPI for modern Python web APIs
+- **Design System** - Inspired by brutalism, space aesthetics, and retro gaming
+- **ML Models** - Built with scikit-learn and PyTorch
+- **UI Framework** - React ecosystem with Vite, Tailwind, and Framer Motion
+- **Backend** - FastAPI for modern Python web APIs
 
 ---
 

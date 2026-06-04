@@ -1,5 +1,5 @@
 /**
- * Short page purpose blurb — keeps each screen approachable.
+ * Short page purpose blurb - keeps each screen approachable.
  */
 const PageIntro = ({ title, purpose, steps }) => {
   return (

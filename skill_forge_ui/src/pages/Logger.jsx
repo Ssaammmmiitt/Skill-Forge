@@ -57,7 +57,7 @@ const Logger = () => {
         activity: 'study',
         value: duration
       })
-      
+
       await syncAfterActivity(result)
       const intGain = result.delta?.INT || 0
       addToast({
@@ -69,7 +69,7 @@ const Logger = () => {
       setStudyDuration('')
       setStudyError(false)
     } catch (err) {
-      setStudyErrorMsg(`FAILED — ${err.message}`)
+      setStudyErrorMsg(`FAILED - ${err.message}`)
     } finally {
       setStudyLoading(false)
     }
@@ -90,7 +90,7 @@ const Logger = () => {
         activity: 'sleep',
         value: hours
       })
-      
+
       await syncAfterActivity(result)
       const energyGain = result.delta?.energy || 0
       addToast({
@@ -101,7 +101,7 @@ const Logger = () => {
       setSleepHours('')
       setSleepError(false)
     } catch (err) {
-      setSleepErrorMsg(`FAILED — ${err.message}`)
+      setSleepErrorMsg(`FAILED - ${err.message}`)
     } finally {
       setSleepLoading(false)
     }
@@ -115,7 +115,7 @@ const Logger = () => {
       <div className="max-w-3xl mx-auto">
         <PageIntro
           title="LOG ACTIVITY"
-          purpose="Record study, sleep, and tasks outside quizzes. These update INT, WIS, and Energy—which also feed your Learning Path skills."
+          purpose="Record study, sleep, and tasks outside quizzes. These update INT, WIS, and Energy-which also feed your Learning Path skills."
           steps={[
             'Study minutes → INT',
             'Sleep hours → Energy',
@@ -160,11 +160,10 @@ const Logger = () => {
                     setStudyError(false)
                   }}
                   placeholder="45"
-                  className={`bg-raw-bg w-full font-mono text-[14px] px-3 py-2 text-raw-text focus:outline-none placeholder:text-raw-text-tertiary ${
-                    studyError
+                  className={`bg-raw-bg w-full font-mono text-[14px] px-3 py-2 text-raw-text focus:outline-none placeholder:text-raw-text-tertiary ${studyError
                       ? 'border-[2px] border-raw-error'
                       : 'border-[2px] border-raw-border focus:border-[3px]'
-                  }`}
+                    }`}
                   style={{ borderRadius: '0px' }}
                 />
                 {studyError && (
@@ -219,11 +218,10 @@ const Logger = () => {
                     setSleepError(false)
                   }}
                   placeholder="7.5"
-                  className={`bg-raw-bg w-full font-mono text-[14px] px-3 py-2 text-raw-text focus:outline-none placeholder:text-raw-text-tertiary ${
-                    sleepError
+                  className={`bg-raw-bg w-full font-mono text-[14px] px-3 py-2 text-raw-text focus:outline-none placeholder:text-raw-text-tertiary ${sleepError
                       ? 'border-[2px] border-raw-error'
                       : 'border-[2px] border-raw-border focus:border-[3px]'
-                  }`}
+                    }`}
                   style={{ borderRadius: '0px' }}
                 />
                 {sleepError && (
@@ -263,7 +261,7 @@ const Logger = () => {
               </h2>
             </div>
             <p className="font-mono text-[12px] text-raw-text-secondary leading-relaxed mb-4">
-              Custom to-do lists live on a separate page — one list per day, your own labels.
+              Custom to-do lists live on a separate page - one list per day, your own labels.
             </p>
             <Link to="/app/tasks">
               <ButtonOffset size="md">OPEN DAILY TASKS →</ButtonOffset>

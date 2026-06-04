@@ -62,8 +62,8 @@ export function getSkillStatus(mastery) {
 export const SKILL_DESCRIPTIONS = {
   logic: 'Analytical thinking from quizzes and study. Higher INT boosts this skill.',
   memory: 'Recall and retention. Improved by consistent quiz practice and study time.',
-  attention: 'Focus and stamina. Tied to your Energy — rest and sleep help here.',
+  attention: 'Focus and stamina. Tied to your Energy - rest and sleep help here.',
   comprehension: 'Understanding concepts deeply. Grows with WIS and conceptual quiz performance.',
   problem_solving: 'Applying knowledge under pressure. Blend of INT and WIS.',
-  wisdom: 'Long-term judgment and synthesis. Your highest-tier goal — driven by WIS.',
+  wisdom: 'Long-term judgment and synthesis. Your highest-tier goal - driven by WIS.',
 }

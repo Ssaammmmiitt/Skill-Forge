@@ -23,7 +23,7 @@ const BehavioralMetricsSection = ({ behavioralMetrics }) => {
         Behavioral metrics
       </h2>
       <p className="font-body-space text-[14px] text-space-nebula mb-6">
-        Engagement and consistency beyond classification accuracy — exported for
+        Engagement and consistency beyond classification accuracy - exported for
         your learning report.
       </p>
 

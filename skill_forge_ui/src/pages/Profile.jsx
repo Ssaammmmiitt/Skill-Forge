@@ -120,7 +120,7 @@ const Profile = () => {
               Cognitive Attributes
             </h2>
             <p className="font-body-space text-[14px] text-space-nebula mt-1">
-              YOUR LEARNING DNA — UPDATED AFTER EVERY SESSION
+              YOUR LEARNING DNA - UPDATED AFTER EVERY SESSION
             </p>
           </div>
 

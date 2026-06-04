@@ -139,7 +139,7 @@ def run_simulation():
     plt.close()
     
     # 4. FINAL REPORT
-    print("=== SKILL FORGE — FINAL EVALUATION REPORT ===")
+    print("=== SKILL FORGE - FINAL EVALUATION REPORT ===")
     print("\n[Trained Model Comparison Summary]")
     print("-" * 65)
     df_metrics = pd.read_csv("reports/model_comparison.csv")

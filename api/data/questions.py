@@ -1,4 +1,4 @@
-"""Quiz question pools — 5 questions sampled per session per difficulty band."""
+"""Quiz question pools - 5 questions sampled per session per difficulty band."""
 
 QUESTIONS_BY_LEVEL = {
     1: [

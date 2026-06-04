@@ -40,7 +40,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
-            {/* Authenticated — dashboard, app, quiz, legacy redirects */}
+            {/* Authenticated - dashboard, app, quiz, legacy redirects */}
             <Route element={<ProtectedRoute />}>
               <Route path="/quiz" element={<Quiz />} />
               <Route path="/analytics" element={<Navigate to="/app/analytics" replace />} />

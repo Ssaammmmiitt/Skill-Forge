@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════════════
-   THEME SYSTEM — Dark & Light Mode for Fusion Design
+   THEME SYSTEM - Dark & Light Mode for Fusion Design
    ═══════════════════════════════════════════════════════════════════ */
 
-/* Default (dark) — used before JS sets data-theme */
+/* Default (dark) - used before JS sets data-theme */
 :root,
 :root[data-theme="dark"] {
   /* RawBlock System - Dark Mode */
@@ -50,7 +50,7 @@
   --btn-offset-face-hover: #FFFFFF;
   --btn-offset-text-hover: #0A0A0A;
 
-  /* Homepage difficulty blocks — dark mode: filled = white, empty = dark */
+  /* Homepage difficulty blocks - dark mode: filled = white, empty = dark */
   --difficulty-filled-bg: #FFFFFF;
   --difficulty-filled-border: #FFFFFF;
   --difficulty-empty-bg: #151515;
@@ -101,7 +101,7 @@
   --btn-offset-face-hover: #0A0A0A;
   --btn-offset-text-hover: #FFFFFF;
 
-  /* Homepage difficulty blocks — light mode: filled = black, empty = white */
+  /* Homepage difficulty blocks - light mode: filled = black, empty = white */
   --difficulty-filled-bg: #0A0A0A;
   --difficulty-filled-border: #0A0A0A;
   --difficulty-empty-bg: #FFFFFF;

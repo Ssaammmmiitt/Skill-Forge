@@ -312,6 +312,6 @@ if __name__ == "__main__":
         insert_student(conn, test_student)
         conn.commit()
         print(get_student_by_id(conn, test_student.student_id))
-        print("DB READY — tables created, test student verified")
+        print("DB READY - tables created, test student verified")
     finally:
         conn.close()

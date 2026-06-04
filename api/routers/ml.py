@@ -17,7 +17,7 @@ CONFUSION_PNG = os.path.join(ROOT, "reports", "confusion_matrix.png")
 def get_model_comparison():
     if not os.path.isfile(COMPARISON_CSV):
         return error(
-            "Model metrics not available — run: python scripts/setup_ml.py",
+            "Model metrics not available - run: python scripts/setup_ml.py",
             503,
         )
 
@@ -52,7 +52,7 @@ def get_model_comparison():
 def get_confusion_matrix_image():
     if not os.path.isfile(CONFUSION_PNG):
         return error(
-            "Confusion matrix image not found — run: python scripts/setup_ml.py",
+            "Confusion matrix image not found - run: python scripts/setup_ml.py",
             404,
         )
     return FileResponse(CONFUSION_PNG, media_type="image/png")

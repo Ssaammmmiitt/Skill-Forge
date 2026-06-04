@@ -11,18 +11,18 @@ const ModelComparisonSection = () => {
 
   useEffect(() => {
     let cancelled = false
-    ;(async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        const result = await getModelComparison()
-        if (!cancelled) setData(result)
-      } catch (err) {
-        if (!cancelled) setError(err.message)
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    })()
+      ; (async () => {
+        setLoading(true)
+        setError(null)
+        try {
+          const result = await getModelComparison()
+          if (!cancelled) setData(result)
+        } catch (err) {
+          if (!cancelled) setError(err.message)
+        } finally {
+          if (!cancelled) setLoading(false)
+        }
+      })()
     return () => {
       cancelled = true
     }
@@ -107,7 +107,7 @@ const ModelComparisonSection = () => {
               />
             ) : (
               <p className="font-mono text-xs text-space-text-secondary">
-                Image not generated yet — run setup_ml.py
+                Image not generated yet - run setup_ml.py
               </p>
             )}
           </CardStar>

@@ -143,7 +143,7 @@ const DailyTasks = () => {
           purpose="Build your own checklist for each day. Tasks are saved per date so you can plan tomorrow or review yesterday. Completing items can earn WIS when you sync rewards."
           steps={[
             'Pick a date with the arrows or date picker',
-            'Add tasks — they stay on that day only',
+            'Add tasks - they stay on that day only',
             'Check off work as you go',
             'Use “Sync WIS” to apply completed tasks to your character (same as Log Activity)',
           ]}
@@ -257,9 +257,8 @@ const DailyTasks = () => {
                   <button
                     type="button"
                     onClick={() => handleToggle(todo)}
-                    className={`mt-0.5 w-5 h-5 shrink-0 border-[2px] border-raw-border flex items-center justify-center ${
-                      todo.completed ? 'bg-raw-border' : 'bg-raw-bg'
-                    }`}
+                    className={`mt-0.5 w-5 h-5 shrink-0 border-[2px] border-raw-border flex items-center justify-center ${todo.completed ? 'bg-raw-border' : 'bg-raw-bg'
+                      }`}
                     style={{ borderRadius: 0 }}
                     aria-label={todo.completed ? 'Mark incomplete' : 'Mark complete'}
                   >
@@ -268,11 +267,10 @@ const DailyTasks = () => {
                     )}
                   </button>
                   <span
-                    className={`flex-1 font-raw text-[11px] uppercase tracking-wide leading-relaxed ${
-                      todo.completed
+                    className={`flex-1 font-raw text-[11px] uppercase tracking-wide leading-relaxed ${todo.completed
                         ? 'text-raw-text-tertiary line-through'
                         : 'text-raw-text'
-                    }`}
+                      }`}
                   >
                     {todo.label}
                   </span>

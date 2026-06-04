@@ -34,7 +34,7 @@ const Analytics = () => {
       <div className="min-h-full bg-space-deep px-8 py-16">
         <PageIntro
           title="ANALYTICS"
-          purpose="Charts and ML insights from your quiz behavior—pace, consistency, and learning style over time."
+          purpose="Charts and ML insights from your quiz behavior-pace, consistency, and learning style over time."
         />
         <p className="font-body-space text-space-error text-sm mt-4">{error}</p>
         <ButtonStar className="mt-4" onClick={refetch}>
@@ -125,14 +125,14 @@ const Analytics = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <MetricStar
                   label="LEARNING STYLE"
-                  value={summary.learning_style?.replace(/_/g, ' ') || '—'}
+                  value={summary.learning_style?.replace(/_/g, ' ') || '-'}
                 />
                 <MetricStar
                   label="MODEL CONFIDENCE"
                   value={
                     summary.confidence
                       ? `${(summary.confidence * 100).toFixed(0)}%`
-                      : '—'
+                      : '-'
                   }
                 />
                 <MetricStar
@@ -161,7 +161,7 @@ const Analytics = () => {
         )}
 
         <div className="border-t border-space-overlay my-12" />
-        
+
         {analytics.radar && (
           <>
             <section className="mb-12">

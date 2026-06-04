@@ -163,7 +163,7 @@ def main():
         print("conceptual:      {} rows".format(counts.get("conceptual", 0)))
         print("memorization:    {} rows".format(counts.get("memorization", 0)))
         print("Total:          {} rows".format(len(df)))
-        print("SYNTHETIC DATA READY —")
+        print("SYNTHETIC DATA READY -")
         for p in csv_paths:
             print(f"  {p}")
         

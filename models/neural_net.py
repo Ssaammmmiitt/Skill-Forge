@@ -77,7 +77,7 @@ def main():
             
         if epoch % 20 == 0:
             avg_loss = epoch_loss / len(X_train)
-            print(f"Epoch {epoch}/80 — Loss: {avg_loss:.4f}")
+            print(f"Epoch {epoch}/80 - Loss: {avg_loss:.4f}")
             
     # 6. Evaluation after training
     model.eval()
@@ -86,7 +86,7 @@ def main():
         _, predicted = torch.max(test_outputs, 1)
         correct = (predicted == y_test_t).sum().item()
         accuracy = correct / len(y_test_t)
-        print(f"Neural Net — Test accuracy: {accuracy:.2f}")
+        print(f"Neural Net - Test accuracy: {accuracy:.2f}")
         
     # 7. Save model
     os.makedirs("models/saved", exist_ok=True)

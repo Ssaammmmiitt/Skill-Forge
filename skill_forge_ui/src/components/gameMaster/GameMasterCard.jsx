@@ -31,7 +31,7 @@ const GameMasterCard = ({ gameMaster, variant = 'star', compact = false }) => {
   const confidencePct =
     gameMaster.confidence > 0
       ? `${(gameMaster.confidence * 100).toFixed(0)}%`
-      : '—'
+      : '-'
 
   const Wrapper = variant === 'arcade' ? ArcadeShell : StarShell
   const ActionBtn = variant === 'arcade' ? ButtonArcade : ButtonStar
@@ -69,19 +69,18 @@ const GameMasterCard = ({ gameMaster, variant = 'star', compact = false }) => {
       </p>
 
       <div
-        className={`grid gap-2 md:gap-4 mb-4 ${
-          compact ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'
-        }`}
+        className={`grid gap-2 md:gap-4 mb-4 ${compact ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'
+          }`}
       >
         <MetricStar label="Style" value={styleLabel} />
         <MetricStar label="Confidence" value={confidencePct} />
         <MetricStar
           label="Difficulty"
-          value={gameMaster.difficulty_label || '—'}
+          value={gameMaster.difficulty_label || '-'}
         />
         <MetricStar
           label="Next level"
-          value={String(gameMaster.suggested_difficulty ?? '—')}
+          value={String(gameMaster.suggested_difficulty ?? '-')}
         />
       </div>
 
@@ -121,9 +120,8 @@ const StarShell = ({ children, compact }) => (
 
 const ArcadeShell = ({ children, compact }) => (
   <div
-    className={`border-[3px] border-dotted border-arcade-primary bg-arcade-surface text-left ${
-      compact ? 'p-5 mt-6' : 'p-6'
-    }`}
+    className={`border-[3px] border-dotted border-arcade-primary bg-arcade-surface text-left ${compact ? 'p-5 mt-6' : 'p-6'
+      }`}
     style={{ borderRadius: 0 }}
   >
     {children}

@@ -182,8 +182,8 @@ if __name__ == "__main__":
         # Print the student to confirm
         print(retrieved)
         
-        # Print "DB READY — tables created, test student verified"
-        print("DB READY — tables created, test student verified")
+        # Print "DB READY - tables created, test student verified"
+        print("DB READY - tables created, test student verified")
         
     finally:
         conn.close()

@@ -111,11 +111,10 @@ const UsernamePicker = ({ firstName, selectedUsername, onSelect, error: external
               type="button"
               onClick={() => handleSuggestionClick(username)}
               className={`w-full text-left px-3 py-2.5 border-[3px] transition-all duration-150
-                       font-mono text-[14px] ${
-                selectedUsername === username
+                       font-mono text-[14px] ${selectedUsername === username
                   ? 'bg-raw-border border-raw-border text-raw-bg'
                   : 'bg-raw-surface border-raw-border text-raw-white hover:border-[5px]'
-              }`}
+                }`}
               style={{ borderRadius: '0px' }}
             >
               @{username}
@@ -157,7 +156,7 @@ const UsernamePicker = ({ firstName, selectedUsername, onSelect, error: external
         </div>
         {showSuggestionStyle && (
           <p className="font-mono text-raw-text-tertiary text-[10px] mt-1.5">
-            Selected from suggestions — edit to choose a different username
+            Selected from suggestions - edit to choose a different username
           </p>
         )}
       </div>

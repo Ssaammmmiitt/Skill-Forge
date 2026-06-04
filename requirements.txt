@@ -14,7 +14,7 @@ google-auth-httplib2==0.2.0
 # For now, we use standard sqlite3 with encrypted passwords
 
 # Machine Learning
-scikit-learn==1.3.2
+scikit-learn>=1.3.2
 numpy==1.26.4
 pandas==2.1.4
 torch==2.2.2

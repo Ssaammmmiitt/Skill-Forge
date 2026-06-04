@@ -1,4 +1,4 @@
-"""Cognitive behavior analysis — aggregates sessions, ML inference, and game-master paths."""
+"""Cognitive behavior analysis - aggregates sessions, ML inference, and game-master paths."""
 
 from __future__ import annotations
 

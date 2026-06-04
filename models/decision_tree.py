@@ -25,7 +25,7 @@ def main():
     # 4. Print DT accuracy
     y_pred = clf.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
-    print(f"Decision Tree — Test accuracy: {accuracy:.2f}")
+    print(f"Decision Tree - Test accuracy: {accuracy:.2f}")
     
     # 5. Save model
     os.makedirs("models/saved", exist_ok=True)

@@ -67,10 +67,10 @@ const Leaderboard = () => {
   return (
     <div className="min-h-full bg-arcade-surface px-8 py-12">
       <div className="max-w-[1200px] mx-auto">
-        
+
         <PageIntro
           title="LEADERBOARD"
-          purpose="See how you rank against other learners on XP, INT, or WIS. Friendly competition—your personal ML insights are still on Analytics."
+          purpose="See how you rank against other learners on XP, INT, or WIS. Friendly competition-your personal ML insights are still on Analytics."
         />
 
         {/* SORT BUTTONS */}

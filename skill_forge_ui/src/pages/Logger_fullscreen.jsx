@@ -51,10 +51,10 @@ const Logger = () => {
         activity: 'study',
         value: duration
       })
-      
+
       const delta = result.delta || {}
       updateAttributes(delta)
-      
+
       const intGain = delta.INT || 0
       addToast({
         message: `+${intGain} INT`,
@@ -65,7 +65,7 @@ const Logger = () => {
       setStudyDuration('')
       setStudyError(false)
     } catch (err) {
-      setStudyErrorMsg(`FAILED — ${err.message}`)
+      setStudyErrorMsg(`FAILED - ${err.message}`)
     } finally {
       setStudyLoading(false)
     }
@@ -178,11 +178,10 @@ const Logger = () => {
                 setStudyError(false)
               }}
               placeholder="45"
-              className={`bg-raw-surface w-full font-mono text-[15px] px-3 py-2.5 text-raw-white focus:outline-none placeholder:text-raw-text-tertiary ${
-                studyError
+              className={`bg-raw-surface w-full font-mono text-[15px] px-3 py-2.5 text-raw-white focus:outline-none placeholder:text-raw-text-tertiary ${studyError
                   ? 'border-[3px] border-raw-error'
                   : 'border-[3px] border-raw-border focus:border-[5px]'
-              }`}
+                }`}
               style={{ borderRadius: '0px' }}
             />
             {studyError && (
@@ -198,8 +197,8 @@ const Logger = () => {
             </div>
           )}
 
-          <ButtonRaw 
-            size="lg" 
+          <ButtonRaw
+            size="lg"
             onClick={handleStudySubmit}
             disabled={studyLoading}
           >
@@ -244,11 +243,10 @@ const Logger = () => {
                 setSleepError(false)
               }}
               placeholder="7.5"
-              className={`bg-raw-surface w-full font-mono text-[15px] px-3 py-2.5 text-raw-white focus:outline-none placeholder:text-raw-text-tertiary ${
-                sleepError
+              className={`bg-raw-surface w-full font-mono text-[15px] px-3 py-2.5 text-raw-white focus:outline-none placeholder:text-raw-text-tertiary ${sleepError
                   ? 'border-[3px] border-raw-error'
                   : 'border-[3px] border-raw-black focus:border-[5px]'
-              }`}
+                }`}
               style={{ borderRadius: '0px' }}
             />
             {sleepError && (
@@ -264,8 +262,8 @@ const Logger = () => {
             </div>
           )}
 
-          <ButtonRaw 
-            size="lg" 
+          <ButtonRaw
+            size="lg"
             onClick={handleSleepSubmit}
             disabled={sleepLoading}
           >
@@ -304,9 +302,8 @@ const Logger = () => {
               className="border-b-[3px] border-raw-black py-4 flex items-center gap-4 cursor-pointer"
             >
               <div
-                className={`w-5 h-5 border-[3px] border-raw-black flex items-center justify-center focus:border-[5px] ${
-                  task.checked ? 'bg-raw-black' : 'bg-raw-white'
-                }`}
+                className={`w-5 h-5 border-[3px] border-raw-black flex items-center justify-center focus:border-[5px] ${task.checked ? 'bg-raw-black' : 'bg-raw-white'
+                  }`}
                 style={{ borderRadius: '0px' }}
               >
                 {task.checked && (

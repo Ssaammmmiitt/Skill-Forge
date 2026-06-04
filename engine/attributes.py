@@ -46,4 +46,4 @@ if __name__ == "__main__":
                 created_at="2025-01-01T00:00:00")
     s2 = update_attributes(s, "study", 30)   # 30 min study
     assert s2.INT == 62, f"Expected 62, got {s2.INT}"
-    print("attributes.py — smoke test PASSED")
+    print("attributes.py - smoke test PASSED")

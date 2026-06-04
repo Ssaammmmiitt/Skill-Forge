@@ -58,7 +58,7 @@ def list_todos(
     date: str = Query(..., alias="date", description="YYYY-MM-DD"),
 ):
     if not _valid_date(date):
-        return error("Invalid date — use YYYY-MM-DD", 400)
+        return error("Invalid date - use YYYY-MM-DD", 400)
 
     student = get_student_by_id(conn, student_id)
     if student is None:
@@ -81,7 +81,7 @@ def create_todo(body: CreateTodoBody, conn: DbConn):
     if not body.student_id or not body.task_date or not body.label.strip():
         return error("student_id, task_date, and label are required", 400)
     if not _valid_date(body.task_date):
-        return error("Invalid task_date — use YYYY-MM-DD", 400)
+        return error("Invalid task_date - use YYYY-MM-DD", 400)
 
     student = get_student_by_id(conn, body.student_id)
     if student is None:
@@ -136,7 +136,7 @@ def copy_incomplete(body: CopyTodosBody, conn: DbConn):
     if not body.student_id or not body.from_date or not body.to_date:
         return error("student_id, from_date, and to_date are required", 400)
     if not _valid_date(body.from_date) or not _valid_date(body.to_date):
-        return error("Invalid date — use YYYY-MM-DD", 400)
+        return error("Invalid date - use YYYY-MM-DD", 400)
 
     student = get_student_by_id(conn, body.student_id)
     if student is None:

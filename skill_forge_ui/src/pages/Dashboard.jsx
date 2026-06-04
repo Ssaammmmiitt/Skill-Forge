@@ -41,7 +41,7 @@ const Dashboard = () => {
     const date = new Date()
     const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY']
     const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-    return `${days[date.getDay()]}, ${months[date.getMonth()]} ${String(date.getDate()).padStart(2, '0')} — SESSION ACTIVE`
+    return `${days[date.getDay()]}, ${months[date.getMonth()]} ${String(date.getDate()).padStart(2, '0')} - SESSION ACTIVE`
   }
 
   const getDifficultyStatus = (difficulty) => {
@@ -62,7 +62,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-full">
-      
+
       {/* HERO SECTION - RawBlock brutal hero */}
       <section className="bg-raw-black px-20 pt-20 pb-16">
         <div className="font-raw text-raw-white text-[14px] uppercase tracking-[4px]">
@@ -115,7 +115,7 @@ const Dashboard = () => {
         <div className="mt-8 max-w-2xl">
           <ProgressStar
             value={levelInfo.progress}
-            label={`LEVEL ${levelInfo.currentLevel} PROGRESS — ${levelInfo.currentLevelXP} / ${levelInfo.xpForNextLevel} XP`}
+            label={`LEVEL ${levelInfo.currentLevel} PROGRESS - ${levelInfo.currentLevelXP} / ${levelInfo.xpForNextLevel} XP`}
           />
         </div>
       </section>
@@ -162,25 +162,25 @@ const Dashboard = () => {
           <div className="font-mono text-raw-white text-xs">NO SESSIONS YET</div>
         ) : (
           sessions.map((session, index) => (
-          <div
-            key={index}
-            className="flex justify-between items-center border-b border-space-overlay py-4"
-          >
-            <div className="font-raw uppercase tracking-[2px] text-raw-white text-sm flex-1">
-              {session.topic}
+            <div
+              key={index}
+              className="flex justify-between items-center border-b border-space-overlay py-4"
+            >
+              <div className="font-raw uppercase tracking-[2px] text-raw-white text-sm flex-1">
+                {session.topic}
+              </div>
+              <div className="font-mono text-space-nebula text-sm flex-1 text-center">
+                {session.quiz_score} / 100
+              </div>
+              <div className="flex items-center gap-4 flex-1 justify-end">
+                <BadgeStar status={getDifficultyStatus(session.difficulty)}>
+                  Difficulty {session.difficulty}
+                </BadgeStar>
+                <span className="font-mono text-[#999] text-xs">
+                  {Math.floor(session.time_taken / 60)}:{String(session.time_taken % 60).padStart(2, '0')}
+                </span>
+              </div>
             </div>
-            <div className="font-mono text-space-nebula text-sm flex-1 text-center">
-              {session.quiz_score} / 100
-            </div>
-            <div className="flex items-center gap-4 flex-1 justify-end">
-              <BadgeStar status={getDifficultyStatus(session.difficulty)}>
-                Difficulty {session.difficulty}
-              </BadgeStar>
-              <span className="font-mono text-[#999] text-xs">
-                {Math.floor(session.time_taken / 60)}:{String(session.time_taken % 60).padStart(2, '0')}
-              </span>
-            </div>
-          </div>
           ))
         )}
       </section>

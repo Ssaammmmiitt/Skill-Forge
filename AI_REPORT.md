@@ -1,4 +1,4 @@
-# Skill Forge — AI / ML Report
+# Skill Forge - AI / ML Report
 
 ## Problem
 
@@ -17,14 +17,14 @@ Classify each learner’s **cognitive learning style** from quiz behavior and ad
 
 Derived per quiz session:
 
-1. `quiz_score` — percentage correct  
-2. `time_taken` — total seconds  
-3. `mistakes` — wrong count  
-4. `difficulty` — 1–10  
-5. `accuracy_rate` — score / 100  
-6. `mistake_rate` — mistakes / 5 questions  
-7. `time_per_question` — time / 5  
-8. `pace_index` — accuracy per minute per question  
+1. `quiz_score` - percentage correct  
+2. `time_taken` - total seconds  
+3. `mistakes` - wrong count  
+4. `difficulty` - 1–10  
+5. `accuracy_rate` - score / 100  
+6. `mistake_rate` - mistakes / 5 questions  
+7. `time_per_question` - time / 5  
+8. `pace_index` - accuracy per minute per question  
 
 ## Models
 
@@ -48,8 +48,8 @@ python scripts/setup_ml.py
 
 Outputs:
 
-- `reports/model_comparison.csv` — accuracy, precision, recall, F1 (macro)  
-- `reports/confusion_matrix.png` — side-by-side DT vs NN  
+- `reports/model_comparison.csv` - accuracy, precision, recall, F1 (macro)  
+- `reports/confusion_matrix.png` - side-by-side DT vs NN  
 
 Behavioral simulation: `python reports/evaluation.py` (difficulty + completion trends).
 

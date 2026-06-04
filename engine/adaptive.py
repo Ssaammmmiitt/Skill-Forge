@@ -76,4 +76,4 @@ if __name__ == "__main__":
 
     path = get_learning_path("conceptual", 6)
     assert "essay" in path["task_types"]
-    print("adaptive.py — smoke test PASSED")
+    print("adaptive.py - smoke test PASSED")

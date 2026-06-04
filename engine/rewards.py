@@ -60,4 +60,4 @@ if __name__ == "__main__":
     s2, events = award_xp(s, "quiz_complete")
     s2, events2 = award_xp(s2, "perfect_score")
     assert "level_up" in events or "level_up" in events2, "Level up should fire"
-    print("rewards.py — smoke test PASSED")
+    print("rewards.py - smoke test PASSED")

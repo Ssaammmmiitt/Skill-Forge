@@ -119,13 +119,13 @@ const Quiz = () => {
 
   const handleAnswerSelect = (index) => {
     if (selectedIndex !== null) return
-    
+
     setSelectedIndex(index)
-    
+
     setTimeout(() => {
       const isCorrect = index === currentQuestion.correct_index
       const isTimeout = index === null
-      
+
       let questionXP = 0
       let newEvents = []
       let newStreak = streak
@@ -135,7 +135,7 @@ const Quiz = () => {
         newStreak = streak + 1
         setStreak(newStreak)
         questionXP = 50 + (Math.floor(timeLeft / 3) * 5)
-        
+
         if (newStreak >= 3) newEvents.push(`STREAK ×${newStreak}`)
         if (timeLeft >= 12) newEvents.push('QUICK')
         if (newStreak === 5) newEvents.push('PERFECT')
@@ -162,7 +162,7 @@ const Quiz = () => {
       }])
 
       addToast({
-        message: isCorrect 
+        message: isCorrect
           ? `+${String(questionXP).padStart(3, '0')} XP${newEvents.length > 0 ? ' · ' + newEvents.join(' · ') : ''}`
           : (isTimeout ? 'TIME UP' : 'INCORRECT'),
         type: 'arcade'
@@ -230,7 +230,7 @@ const Quiz = () => {
           learningPath: pathFocus,
         })
       }
-      
+
       if (result.student) {
         setStudent(result.student)
       } else if (user?.student_id) {
@@ -240,7 +240,7 @@ const Quiz = () => {
       if (result.xp_earned !== undefined) {
         setXpEarned(result.xp_earned)
       }
-      
+
       setPhase('complete')
     } catch (err) {
       setSubmitError(err.message || 'Failed to submit quiz')
@@ -252,7 +252,7 @@ const Quiz = () => {
   // Spacebar to start quiz
   useEffect(() => {
     if (phase !== 'start' || loading || error) return
-    
+
     const handleSpacePress = (e) => {
       if (e.code === 'Space' || e.key === ' ') {
         e.preventDefault()
@@ -267,10 +267,10 @@ const Quiz = () => {
   // Keyboard shortcuts for quiz
   useEffect(() => {
     if (phase !== 'question' || !currentQuestion) return
-    
+
     const handleKeyPress = (e) => {
       if (selectedIndex !== null) return // Already selected
-      
+
       const key = e.key.toLowerCase()
       if (key >= '1' && key <= '4') {
         const index = parseInt(key) - 1
@@ -345,7 +345,7 @@ const Quiz = () => {
               </div>
 
               <p className="font-body-space text-[13px] md:text-[16px] text-arcade-secondary leading-relaxed mt-2 max-w-md mx-auto px-1 md:px-2">
-                Five questions per run, drawn from a larger topic bank. Your speed, accuracy, and mistakes train the learning-style models—not the topic labels alone.
+                Five questions per run, drawn from a larger topic bank. Your speed, accuracy, and mistakes train the learning-style models-not the topic labels alone.
               </p>
 
               <div className="border-b-[2px] md:border-b-[3px] border-dotted border-arcade-primary my-6 md:my-8" />
@@ -399,9 +399,8 @@ const Quiz = () => {
               Q.{String(currentIndex + 1).padStart(2, '0')}/{String(questions.length).padStart(2, '0')}
             </div>
             <div
-              className={`border-[2px] md:border-[3px] border-dotted px-2 md:px-3 py-1 ${
-                timeLeft <= 5 ? 'border-arcade-danger' : 'border-arcade-primary'
-              }`}
+              className={`border-[2px] md:border-[3px] border-dotted px-2 md:px-3 py-1 ${timeLeft <= 5 ? 'border-arcade-danger' : 'border-arcade-primary'
+                }`}
               style={{ borderRadius: '0px' }}
             >
               <span className="font-arcade text-[10px] md:text-[12px] text-space-star tracking-[2px]">
@@ -437,9 +436,8 @@ const Quiz = () => {
                   {String.fromCharCode(65 + index)}
                 </span>
                 <span
-                  className={`font-arcade text-[12px] md:text-[14px] tracking-[1px] leading-relaxed ${
-                    selectedIndex === index ? 'text-raw-white font-bold' : 'text-arcade-secondary'
-                  }`}
+                  className={`font-arcade text-[12px] md:text-[14px] tracking-[1px] leading-relaxed ${selectedIndex === index ? 'text-raw-white font-bold' : 'text-arcade-secondary'
+                    }`}
                 >
                   {option}
                 </span>
@@ -462,9 +460,8 @@ const Quiz = () => {
           <div className="font-arcade text-[14px] md:text-[16px] tracking-[2px] md:tracking-[3px] mb-4 md:mb-6 font-bold">
             {isTimeout ? '// TIME UP //' : (isCorrect ? '// CORRECT //' : '// WRONG //')}
             <span
-              className={`ml-2 ${
-                isTimeout ? 'text-arcade-secondary' : (isCorrect ? 'text-space-success' : 'text-space-error')
-              }`}
+              className={`ml-2 ${isTimeout ? 'text-arcade-secondary' : (isCorrect ? 'text-space-success' : 'text-space-error')
+                }`}
             >
               {isTimeout ? '' : (isCorrect ? '✓' : '✗')}
             </span>
@@ -472,18 +469,16 @@ const Quiz = () => {
 
           <div className="mb-4 md:mb-6">
             <div
-              className={`bg-arcade-surface border-[2px] md:border-[3px] border-solid p-3 md:p-5 transition-all duration-200 ${
-                isCorrect ? 'border-space-success' : 'border-arcade-primary'
-              }`}
+              className={`bg-arcade-surface border-[2px] md:border-[3px] border-solid p-3 md:p-5 transition-all duration-200 ${isCorrect ? 'border-space-success' : 'border-arcade-primary'
+                }`}
               style={{ borderRadius: '0px' }}
             >
               <span className="font-arcade text-[10px] md:text-[12px] text-arcade-primary mr-3 md:mr-5 min-w-[16px] md:min-w-[20px] inline-block">
                 {String.fromCharCode(65 + currentQuestion.correct_index)}
               </span>
               <span
-                className={`font-arcade text-[9px] md:text-[10px] tracking-[1px] leading-relaxed ${
-                  isCorrect ? 'text-space-success' : 'text-arcade-secondary'
-                }`}
+                className={`font-arcade text-[9px] md:text-[10px] tracking-[1px] leading-relaxed ${isCorrect ? 'text-space-success' : 'text-arcade-secondary'
+                  }`}
               >
                 {currentQuestion.options[currentQuestion.correct_index]}
               </span>
@@ -635,9 +630,9 @@ const Quiz = () => {
     >
       <div className="text-center">
         <div className="mb-6">
-          <MetricArcade 
-            label="NEW LEVEL" 
-            value={levelUpData?.newLevel || ''} 
+          <MetricArcade
+            label="NEW LEVEL"
+            value={levelUpData?.newLevel || ''}
           />
         </div>
         <p className="font-arcade text-[8px] text-arcade-secondary tracking-[2px] mt-4">

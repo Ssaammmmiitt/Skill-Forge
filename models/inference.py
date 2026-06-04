@@ -9,6 +9,7 @@ import torch.nn as nn
 
 from config import DT_MODEL_PATH, LE_PATH, ML_FEATURE_NAMES, NN_MODEL_PATH, SCALER_PATH
 from models.features import CustomLabelEncoder, load_preprocessors, session_to_feature_row
+from models.sklearn_compat import patch_sklearn_estimator
 
 
 class SkillForgeNet(nn.Module):
@@ -50,7 +51,7 @@ class ModelRegistry:
 
             if os.path.exists(DT_MODEL_PATH):
                 with open(DT_MODEL_PATH, "rb") as f:
-                    self.clf = pickle.load(f)
+                    self.clf = patch_sklearn_estimator(pickle.load(f))
             if os.path.exists(SCALER_PATH) and os.path.exists(LE_PATH):
                 self.scaler, self.label_encoder = load_preprocessors()
             if os.path.exists(NN_MODEL_PATH):
@@ -92,7 +93,7 @@ class ModelRegistry:
                 "decision_tree": None,
                 "neural_net": None,
                 "probabilities": {},
-                "explanations": ["ML models not trained — run: python scripts/setup_ml.py"],
+                "explanations": ["ML models not trained - run: python scripts/setup_ml.py"],
                 "feature_snapshot": dict(zip(ML_FEATURE_NAMES, raw_row.tolist())),
             }
 
@@ -151,7 +152,7 @@ class ModelRegistry:
         if snap["accuracy_rate"] >= 0.85:
             lines.append("High quiz accuracy")
         elif snap["accuracy_rate"] < 0.6:
-            lines.append("Lower accuracy — room to reinforce fundamentals")
+            lines.append("Lower accuracy - room to reinforce fundamentals")
         if snap["time_per_question"] <= 20:
             lines.append("Fast response pace")
         elif snap["time_per_question"] >= 40:
@@ -159,7 +160,7 @@ class ModelRegistry:
         if snap["mistake_rate"] <= 0.2:
             lines.append("Low mistake rate")
         elif snap["mistake_rate"] >= 0.5:
-            lines.append("Frequent mistakes — repetition may help")
+            lines.append("Frequent mistakes - repetition may help")
         if self.clf is not None and hasattr(self.clf, "feature_importances_"):
             idx = np.argsort(self.clf.feature_importances_)[::-1][:2]
             top = [ML_FEATURE_NAMES[i] for i in idx]

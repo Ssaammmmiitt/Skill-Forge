@@ -2,7 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../../store/useAuthStore'
 
 /**
- * Guards all nested routes — unauthenticated users go to /login.
+ * Guards all nested routes - unauthenticated users go to /login.
  */
 const ProtectedRoute = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)

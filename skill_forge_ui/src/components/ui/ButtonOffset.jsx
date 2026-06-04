@@ -1,5 +1,5 @@
 /**
- * Brutalist offset-shadow button — theme-aware (light: white face / dark text; dark: inverse).
+ * Brutalist offset-shadow button - theme-aware (light: white face / dark text; dark: inverse).
  */
 const ButtonOffset = ({
   children,
@@ -30,27 +30,24 @@ const ButtonOffset = ({
       `}
     >
       <span
-        className={`absolute inset-0 w-full h-full transition duration-200 ease-out transform bg-[var(--btn-offset-shadow)] ${
-          active
+        className={`absolute inset-0 w-full h-full transition duration-200 ease-out transform bg-[var(--btn-offset-shadow)] ${active
             ? 'translate-x-0 translate-y-0'
             : 'translate-x-1 translate-y-1 group-hover:translate-x-0 group-hover:translate-y-0'
-        }`}
+          }`}
         aria-hidden
       />
       <span
-        className={`absolute inset-0 w-full h-full border-2 border-[var(--btn-offset-border)] transition-colors duration-200 ${
-          active
+        className={`absolute inset-0 w-full h-full border-2 border-[var(--btn-offset-border)] transition-colors duration-200 ${active
             ? 'bg-[var(--btn-offset-face-hover)]'
             : 'bg-[var(--btn-offset-face)] group-hover:bg-[var(--btn-offset-face-hover)]'
-        }`}
+          }`}
         aria-hidden
       />
       <span
-        className={`relative transition-colors duration-200 ${
-          active
+        className={`relative transition-colors duration-200 ${active
             ? 'text-[var(--btn-offset-text-hover)]'
             : 'text-[var(--btn-offset-text)] group-hover:text-[var(--btn-offset-text-hover)]'
-        }`}
+          }`}
       >
         {children}
       </span>

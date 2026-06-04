@@ -1,4 +1,4 @@
-"""Game Master — personalized guidance from ML + adaptive engine."""
+"""Game Master - personalized guidance from ML + adaptive engine."""
 
 from __future__ import annotations
 

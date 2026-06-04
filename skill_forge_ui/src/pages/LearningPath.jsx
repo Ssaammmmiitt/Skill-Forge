@@ -77,7 +77,7 @@ const LearningPath = () => {
       <div className="max-w-5xl mx-auto">
         <PageIntro
           title="LEARNING PATH"
-          purpose="This is your skill roadmap—not a separate game. Progress comes from your real stats (INT, WIS, Energy) and quiz history. The AI suggests what to focus on next."
+          purpose="This is your skill roadmap-not a separate game. Progress comes from your real stats (INT, WIS, Energy) and quiz history. The AI suggests what to focus on next."
           steps={[
             'Higher INT → logic & problem-solving',
             'Higher WIS → comprehension & wisdom',
@@ -134,11 +134,10 @@ const LearningPath = () => {
                     key={skill.id}
                     type="button"
                     onClick={() => setSelectedId(skill.id)}
-                    className={`w-full text-left rounded-xl p-4 transition-colors border-2 ${
-                      isSelected
+                    className={`w-full text-left rounded-xl p-4 transition-colors border-2 ${isSelected
                         ? 'border-space-star bg-space-overlay'
                         : 'border-transparent bg-space-sunken hover:bg-space-overlay'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-4">
                       <span className="text-3xl" aria-hidden>

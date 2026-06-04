@@ -36,7 +36,7 @@
 ```
 Black       #000000   Text, borders, fills
 White       #FFFFFF   Background, inverse text
-Blue        #0000FF   Links only — reserved
+Blue        #0000FF   Links only - reserved
 Success     #008000
 Warning     #FFA500
 Error       #FF0000
@@ -59,8 +59,8 @@ Info        #60A5FA
 ### Arcade Palette
 
 ```
-Primary     #2A3FE5   Electric blue — actions, links, active states
-Secondary   #F4B9B0   Soft peach — supporting accents
+Primary     #2A3FE5   Electric blue - actions, links, active states
+Secondary   #F4B9B0   Soft peach - supporting accents
 Surface     #000000   The arcade screen
 Success     #16A34A
 Warning     #D97706
@@ -92,7 +92,7 @@ Base unit: **8px** across all three systems.
 
 | System | Rule |
 |--------|------|
-| RawBlock | `0px` everywhere — no exceptions |
+| RawBlock | `0px` everywhere - no exceptions |
 | StarChart | sm `8px` · md `12px` · lg `16px` · pill `9999px` · circle `50%` |
 | Arcade | `0px` default; dotted borders as signature detail |
 
@@ -106,14 +106,14 @@ Base unit: **8px** across all three systems.
 - Border weight = visual hierarchy
 
 ### StarChart
-- No hard borders — use glow instead
+- No hard borders - use glow instead
 - `glow-nebula-sm` 8px #A78BFA @ 30%
 - `glow-nebula-md` 16px #A78BFA @ 40%
 - `glow-star-sm` 8px #FDE047 @ 35%
 - `glow-star-md` 16px #FDE047 @ 50%
 
 ### Arcade
-- `3px dotted #2A3FE5` — the signature border style
+- `3px dotted #2A3FE5` - the signature border style
 - No shadows. Dark canvas + bright accents = depth.
 
 ---
@@ -128,7 +128,7 @@ border: 3px solid #000;
 font-family: 'Archivo Black', sans-serif;
 text-transform: uppercase;
 letter-spacing: 2px;
-/* hover: invert — background #fff, color #000 */
+/* hover: invert - background #fff, color #000 */
 ```
 
 ### StarChart Primary (Star CTA)
@@ -414,21 +414,21 @@ value: Archivo Black 28px #fff;
 - Use `9999px` radius for all StarChart pills and star badges
 - Use `3px dotted` borders in `#2A3FE5` as the Arcade signature
 - Apply `UPPERCASE + letter-spacing` on all RawBlock labels and buttons
-- Use `Press Start 2P` at 8–12px minimum — never smaller
-- Keep StarChart text large (minimum 14px) — designed for kids
+- Use `Press Start 2P` at 8–12px minimum - never smaller
+- Keep StarChart text large (minimum 14px) - designed for kids
 - Use star-yellow `#FDE047` **only** for achievements and primary CTAs
 - Use nebula-purple `#A78BFA` glow to guide attention to interactive elements
 - Reserve `#0000FF` (RawBlock) exclusively for hyperlinks
 
 ### Don't
-- Round any corners in RawBlock — ever
-- Use shadows in RawBlock or Arcade — none, zero
+- Round any corners in RawBlock - ever
+- Use shadows in RawBlock or Arcade - none, zero
 - Use `#0000FF` blue for anything other than links in RawBlock
 - Combine star-glow and nebula-glow on the same StarChart element
-- Use pure white backgrounds in StarChart — always maintain the deep space theme
+- Use pure white backgrounds in StarChart - always maintain the deep space theme
 - Mix the arcade aesthetic with glassmorphism, gradients, or soft UI
-- Use `Press Start 2P` below 8px — bitmap fonts need minimum size to remain legible
-- Polish or refine RawBlock — if it looks too designed, strip it back further
+- Use `Press Start 2P` below 8px - bitmap fonts need minimum size to remain legible
+- Polish or refine RawBlock - if it looks too designed, strip it back further
 
 ---
 
@@ -477,4 +477,4 @@ value: Archivo Black 28px #fff;
 
 ---
 
-*SYSTEM//FUSION — RawBlock · StarChart · Pac-Man — Combined Build v1.0*
+*SYSTEM//FUSION - RawBlock · StarChart · Pac-Man - Combined Build v1.0*
