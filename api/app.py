@@ -1,13 +1,22 @@
 import os
 import sys
 import traceback
+from pathlib import Path
 
-from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-load_dotenv()
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from api.env_config import PROJECT_ROOT, get_groq_api_keys, load_project_env
+
+load_project_env()
+
+_groq_keys = get_groq_api_keys()
+if _groq_keys:
+    print(f"[api] Groq AI reader: {len(_groq_keys)} key(s) configured", flush=True)
+else:
+    print("[api] WARN: GROQ_API_KEY missing — save .env in project root and restart", flush=True)
+
+sys.path.append(str(PROJECT_ROOT))
 
 from api.exceptions import ApiError
 from api.responses import error
@@ -43,6 +52,12 @@ def create_app() -> FastAPI:
 
     @app.on_event("startup")
     def init_database():
+        keys = get_groq_api_keys()
+        if keys:
+            print(f"[api] Groq AI reader: {len(keys)} key(s) (startup check)", flush=True)
+        else:
+            print("[api] WARN: GROQ_API_KEY missing — save project root .env and restart", flush=True)
+
         conn = get_db()
         try:
             create_tables(conn)
@@ -66,10 +81,11 @@ if __name__ == "__main__":
     import uvicorn
 
     port = int(os.environ.get("PORT", 5000))
-    debug = os.environ.get("DEBUG", "True").lower() == "true"
+    # Reload spawns a child process that may not see .env on Windows; opt in via API_RELOAD=true
+    reload = os.environ.get("API_RELOAD", "").lower() in ("1", "true", "yes")
     uvicorn.run(
         "api.app:app",
         host="0.0.0.0",
         port=port,
-        reload=debug,
+        reload=reload,
     )

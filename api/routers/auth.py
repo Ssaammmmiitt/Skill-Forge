@@ -108,7 +108,7 @@ def register(body: RegisterBody, conn: DbConn):
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     auth_store.insert_user(conn, user_data)
-    auth_store.create_student_profile(conn, user_id, name)
+    auth_store.ensure_student_profile(conn, user_id, name)
     conn.commit()
 
     token = generate_jwt_token(user_id, email)
@@ -149,6 +149,7 @@ def login(body: LoginBody, conn: DbConn):
     if not auth_store.verify_password(password, user["password_hash"]):
         return error("Invalid email or password", 401)
 
+    auth_store.ensure_student_profile(conn, user["user_id"], user.get("name") or "")
     auth_store.update_last_login(conn, user["user_id"])
     conn.commit()
 
@@ -215,10 +216,11 @@ def google_login(body: GoogleBody, conn: DbConn):
                 "created_at": datetime.now(timezone.utc).isoformat(),
             }
             auth_store.insert_user(conn, user_data)
-            auth_store.create_student_profile(conn, user_id, name)
+            auth_store.ensure_student_profile(conn, user_id, name)
             conn.commit()
             user = auth_store.get_user_by_id(conn, user_id)
 
+    auth_store.ensure_student_profile(conn, user["user_id"], user.get("name") or "")
     auth_store.update_last_login(conn, user["user_id"])
     conn.commit()
 
@@ -241,6 +243,9 @@ def verify_token(
     user = auth_store.get_user_by_id(conn, user_id)
     if not user:
         return error("User not found", 404)
+
+    auth_store.ensure_student_profile(conn, user_id, user.get("name") or "")
+    conn.commit()
 
     return success(
         {"user": auth_store.user_payload(user), "message": "Token is valid"}

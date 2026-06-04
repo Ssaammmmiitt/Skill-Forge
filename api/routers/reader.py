@@ -1,9 +1,11 @@
+import os
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from pydantic import BaseModel, Field
 
 from api.deps import get_current_user_id
+from api.env_config import get_groq_api_keys
 from api.exceptions import ApiError
 from api.responses import success
 from api.services.groq_quiz import generate_document_quiz
@@ -13,6 +15,18 @@ from engine.file_compress import prepare_upload
 from engine.quiz_shuffle import shuffle_question_pool
 
 router = APIRouter(prefix="/api/reader", tags=["reader"])
+
+
+@router.get("/status")
+def reader_status():
+    keys = get_groq_api_keys()
+    return success(
+        {
+            "groq_configured": bool(keys),
+            "key_count": len(keys),
+            "model": (os.environ.get("GROQ_MODEL") or "llama-3.3-70b-versatile").strip(),
+        }
+    )
 
 
 class DocumentQuizBody(BaseModel):
@@ -51,7 +65,14 @@ async def analyze_document(
     raw = await file.read()
     compression = prepare_upload(file.filename, raw)
 
-    extracted = extract_text(file.filename, compression.data)
+    try:
+        extracted = extract_text(file.filename, compression.data)
+    except ApiError:
+        if compression.was_compressed and compression.data is not raw:
+            extracted = extract_text(file.filename, raw)
+        else:
+            raise
+
     generated = generate_study_content(extracted, mode)
 
     preview = extracted[:600] + ("..." if len(extracted) > 600 else "")

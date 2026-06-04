@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import { getStudent } from '../api/student'
 
 // Check for existing student data on init
@@ -58,8 +58,8 @@ export const useStudentStore = create(
       },
     }),
     {
-      name: 'student-storage', // name of the item in storage
-      getStorage: () => localStorage, // use localStorage
+      name: 'student-storage',
+      storage: createJSONStorage(() => localStorage),
     }
   )
 )

@@ -4,8 +4,12 @@ import os
 import re
 
 from api.data.questions import QUIZ_QUESTIONS_PER_SESSION
+from api.env_config import load_project_env
 from api.exceptions import ApiError
-from api.services.groq_reader import DEFAULT_MODEL, _api_key
+from api.services.groq_client import groq_chat_completion
+from api.services.groq_reader import DEFAULT_MODEL
+
+load_project_env()
 
 QUIZ_MAX_INPUT_CHARS = 12_000
 
@@ -85,27 +89,17 @@ def generate_document_quiz(content: str, filename: str, count: int | None = None
         "Mix recall, definitions, and application. Do not invent facts."
     )
 
-    try:
-        from groq import Groq
-    except ImportError as exc:
-        raise ApiError("Groq SDK not installed on server", 503) from exc
-
     model = (os.environ.get("GROQ_MODEL") or DEFAULT_MODEL).strip()
-    client = Groq(api_key=_api_key())
-
-    try:
-        completion = client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Study material:\n\n{clipped}"},
-            ],
-            temperature=0.35,
-            max_tokens=4096,
-            response_format={"type": "json_object"},
-        )
-    except Exception as exc:
-        raise ApiError(f"AI service error: {exc}", 502) from exc
+    completion = groq_chat_completion(
+        model=model,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"Study material:\n\n{clipped}"},
+        ],
+        temperature=0.35,
+        max_tokens=4096,
+        response_format={"type": "json_object"},
+    )
 
     raw = (completion.choices[0].message.content or "").strip()
     if not raw:

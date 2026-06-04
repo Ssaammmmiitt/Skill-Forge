@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 import bcrypt
 
-from data.models import Student, insert_student
+from data.models import Student, get_student_by_id, insert_student
 
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 
@@ -180,6 +180,13 @@ def create_student_profile(conn, user_id: str, name: str) -> None:
         streak=0,
     )
     insert_student(conn, student)
+
+
+def ensure_student_profile(conn, user_id: str, name: str) -> None:
+    """Create game student row if missing (e.g. legacy accounts without profile)."""
+    if get_student_by_id(conn, user_id) is not None:
+        return
+    create_student_profile(conn, user_id, name or "Student")
 
 
 def user_payload(user: dict) -> dict:

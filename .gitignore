@@ -75,3 +75,5 @@ skill_forge_ui/PROJECT_REPORT.md
 skill_forge_ui/README.md
 
 # Project markdown kept in git: README.md, DESIGN.md, AI_REPORT.md, CONTENT.md (root only)
+REPORT.md
+.env.example

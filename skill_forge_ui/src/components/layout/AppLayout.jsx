@@ -6,6 +6,7 @@ import TopBar from './TopBar'
 import PageTransition from '../motion/PageTransition'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useStudentStore } from '../../store/useStudentStore'
+import { resolveStudentId } from '../../utils/resolveStudentId'
 
 const AppLayout = () => {
   const location = useLocation()
@@ -13,10 +14,11 @@ const AppLayout = () => {
   const refreshStudent = useStudentStore((state) => state.refreshStudent)
 
   useEffect(() => {
-    if (user?.student_id) {
-      refreshStudent(user.student_id).catch(() => {})
+    const studentId = resolveStudentId(user)
+    if (studentId) {
+      refreshStudent(studentId).catch(() => {})
     }
-  }, [user?.student_id, refreshStudent])
+  }, [user, refreshStudent])
 
   return (
     <div className="flex h-screen overflow-hidden bg-raw-bg">

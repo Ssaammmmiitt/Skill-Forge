@@ -41,18 +41,82 @@ def extract_docx(data: bytes) -> str:
     return _truncate("\n".join(parts))
 
 
+def _pptx_text_frame_lines(text_frame) -> list[str]:
+    lines = []
+    for para in text_frame.paragraphs:
+        runs = [run.text for run in para.runs if run.text]
+        line = "".join(runs).strip() if runs else (para.text or "").strip()
+        if line:
+            lines.append(line)
+    return lines
+
+
+def _pptx_shape_text(shape) -> list[str]:
+    """Collect text from a shape, including groups, tables, and placeholders."""
+    from pptx.enum.shapes import MSO_SHAPE_TYPE
+
+    try:
+        shape_type = shape.shape_type
+    except Exception:
+        return []
+
+    parts: list[str] = []
+
+    if shape_type == MSO_SHAPE_TYPE.GROUP:
+        for child in shape.shapes:
+            parts.extend(_pptx_shape_text(child))
+        return parts
+
+    if shape_type == MSO_SHAPE_TYPE.TABLE:
+        try:
+            for row in shape.table.rows:
+                cells = [cell.text.strip() for cell in row.cells if cell.text.strip()]
+                if cells:
+                    parts.append(" | ".join(cells))
+        except Exception:
+            pass
+        return parts
+
+    try:
+        if shape.has_text_frame:
+            parts.extend(_pptx_text_frame_lines(shape.text_frame))
+            if parts:
+                return parts
+    except Exception:
+        pass
+
+    try:
+        if shape.text and shape.text.strip():
+            parts.append(shape.text.strip())
+    except Exception:
+        pass
+
+    return parts
+
+
 def extract_pptx(data: bytes) -> str:
     from pptx import Presentation
 
     prs = Presentation(io.BytesIO(data))
     parts = []
     for slide_num, slide in enumerate(prs.slides, start=1):
-        slide_bits = []
+        slide_bits: list[str] = []
         for shape in slide.shapes:
-            if hasattr(shape, "text") and shape.text.strip():
-                slide_bits.append(shape.text.strip())
-        if slide_bits:
-            parts.append(f"--- Slide {slide_num} ---\n" + "\n".join(slide_bits))
+            slide_bits.extend(_pptx_shape_text(shape))
+
+        if slide.has_notes_slide and slide.notes_slide.notes_text_frame:
+            notes = slide.notes_slide.notes_text_frame.text.strip()
+            if notes:
+                slide_bits.append(f"[Speaker notes] {notes}")
+
+        # De-duplicate consecutive identical lines while preserving order
+        deduped: list[str] = []
+        for line in slide_bits:
+            if not deduped or deduped[-1] != line:
+                deduped.append(line)
+
+        if deduped:
+            parts.append(f"--- Slide {slide_num} ---\n" + "\n".join(deduped))
     return _truncate("\n\n".join(parts))
 
 
@@ -95,9 +159,18 @@ def extract_text(filename: str, data: bytes) -> str:
     except Exception as exc:
         raise ApiError(f"Could not read file: {exc}", 400) from exc
 
-    if not text or len(text.strip()) < 20:
+    stripped = (text or "").strip()
+    if len(stripped) < 20:
+        hint = ""
+        if ext == ".pptx":
+            hint = (
+                " Slides may be image-only—add speaker notes in PowerPoint, "
+                "or export to PDF with selectable text."
+            )
+        elif ext == ".pdf":
+            hint = " The PDF may be scanned images—use a text-based PDF or add OCR."
         raise ApiError(
-            "Could not extract enough text from this file. Try a different export or format.",
+            f"Could not extract enough text from this file ({len(stripped)} characters).{hint}",
             400,
         )
     return text

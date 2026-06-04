@@ -85,6 +85,14 @@ const Register = () => {
     }
   }
 
+  const handleEnterKey = (e) => {
+    if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
+    if (e.target.tagName === 'TEXTAREA') return
+    e.preventDefault()
+    if (loading) return
+    handleSubmit(e)
+  }
+
   const handleGoogleRegisterFallback = () => {
     if (!isGoogleConfigured) {
       setError('Google Sign-In not configured. Add VITE_GOOGLE_CLIENT_ID to your .env file.')
@@ -169,7 +177,7 @@ const Register = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} onKeyDown={handleEnterKey} className="space-y-5">
             <div>
               <label className="font-raw text-[11px] uppercase tracking-[1px] text-raw-white block mb-2">
                 Full Name

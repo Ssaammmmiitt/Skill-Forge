@@ -19,21 +19,29 @@ export const analyzeDocument = async (file, mode, onUploadProgress) => {
   const headers = {}
   if (token) headers.Authorization = `Bearer ${token}`
 
-  const response = await axios.post(`${baseURL}/reader/analyze`, form, {
-    headers,
-    timeout: 180000,
-    onUploadProgress: (event) => {
-      if (event.total && onUploadProgress) {
-        onUploadProgress(Math.round((event.loaded * 100) / event.total))
-      }
-    },
-  })
+  try {
+    const response = await axios.post(`${baseURL}/reader/analyze`, form, {
+      headers,
+      timeout: 180000,
+      onUploadProgress: (event) => {
+        if (event.total && onUploadProgress) {
+          onUploadProgress(Math.round((event.loaded * 100) / event.total))
+        }
+      },
+    })
 
-  const body = response.data
-  if (body?.error) {
-    throw new Error(body.error)
+    const body = response.data
+    if (body?.error) {
+      throw new Error(body.error)
+    }
+    return body?.data ?? body
+  } catch (err) {
+    const message =
+      err.response?.data?.error ||
+      err.message ||
+      'Could not process document'
+    throw new Error(message)
   }
-  return body?.data ?? body
 }
 
 /**
@@ -47,17 +55,25 @@ export const generateDocumentQuiz = async (content, filename, difficulty = 5) =>
   const headers = { 'Content-Type': 'application/json' }
   if (token) headers.Authorization = `Bearer ${token}`
 
-  const response = await axios.post(
-    `${baseURL}/reader/quiz`,
-    { content, filename, difficulty },
-    { headers, timeout: 120000 }
-  )
+  try {
+    const response = await axios.post(
+      `${baseURL}/reader/quiz`,
+      { content, filename, difficulty },
+      { headers, timeout: 120000 }
+    )
 
-  const body = response.data
-  if (body?.error) {
-    throw new Error(body.error)
+    const body = response.data
+    if (body?.error) {
+      throw new Error(body.error)
+    }
+    return body?.data ?? body
+  } catch (err) {
+    const message =
+      err.response?.data?.error ||
+      err.message ||
+      'Could not generate quiz'
+    throw new Error(message)
   }
-  return body?.data ?? body
 }
 
 export const DOCUMENT_QUIZ_STORAGE_KEY = 'sf_document_quiz'

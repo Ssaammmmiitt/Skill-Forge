@@ -56,6 +56,14 @@ const Login = () => {
     }
   }
 
+  const handleEnterKey = (e) => {
+    if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
+    if (e.target.tagName === 'TEXTAREA') return
+    e.preventDefault()
+    if (loading) return
+    handleSubmit(e)
+  }
+
   const handleGoogleLoginFallback = () => {
     if (!isGoogleConfigured) {
       setError('Google Sign-In not configured. Add VITE_GOOGLE_CLIENT_ID to your .env file.')
@@ -154,7 +162,7 @@ const Login = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} onKeyDown={handleEnterKey} className="space-y-6">
             <div>
               <label className="font-raw text-[11px] uppercase tracking-[1px] text-raw-text block mb-2">
                 Username or Email

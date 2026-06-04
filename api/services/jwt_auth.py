@@ -2,9 +2,12 @@ import os
 from datetime import datetime, timedelta, timezone
 
 import jwt
+from pathlib import Path
+
 from dotenv import load_dotenv
 
-load_dotenv()
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+load_dotenv(_PROJECT_ROOT / ".env")
 
 SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "your-secret-key-change-in-production")
 JWT_ALGORITHM = "HS256"
