@@ -24,6 +24,7 @@ const Sidebar = () => {
     { path: '/dashboard', label: 'DASHBOARD' },
     { path: '/app/profile', label: 'PROFILE' },
     { path: '/quiz', label: 'QUIZ' },
+    { path: '/app/quiz/custom', label: 'CUSTOM QUIZ' },
     { path: '/app/tasks', label: 'DAILY TASKS' },
     { path: '/app/log', label: 'LOG ACTIVITY' },
     { path: '/app/reader', label: 'DOC READER' },

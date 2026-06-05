@@ -17,6 +17,7 @@ const DailyTasks = lazy(() => import('./pages/DailyTasks'))
 const LearningPath = lazy(() => import('./pages/LearningPath'))
 const Analytics = lazy(() => import('./pages/Analytics'))
 const Leaderboard = lazy(() => import('./pages/Leaderboard'))
+const CustomQuizSetup = lazy(() => import('./pages/CustomQuizSetup'))
 const DocumentReader = lazy(() => import('./pages/DocumentReader'))
 const ComponentTest = lazy(() => import('./pages/ComponentTest'))
 
@@ -46,6 +47,7 @@ function App() {
             {/* Authenticated - dashboard, app, quiz, legacy redirects */}
             <Route element={<ProtectedRoute />}>
               <Route path="/quiz" element={<Quiz />} />
+              <Route path="/quiz/custom" element={<Navigate to="/app/quiz/custom" replace />} />
               <Route path="/analytics" element={<Navigate to="/app/analytics" replace />} />
               <Route path="/log" element={<Navigate to="/app/log" replace />} />
               <Route path="/tasks" element={<Navigate to="/app/tasks" replace />} />
@@ -63,6 +65,7 @@ function App() {
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="leaderboard" element={<Leaderboard />} />
                 <Route path="reader" element={<DocumentReader />} />
+                <Route path="quiz/custom" element={<CustomQuizSetup />} />
                 <Route path="test" element={<ComponentTest />} />
               </Route>
             </Route>

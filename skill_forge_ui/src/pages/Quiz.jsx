@@ -9,6 +9,11 @@ import {
   loadDocumentQuizSession,
   clearDocumentQuizSession,
 } from '../api/reader'
+import {
+  loadCustomQuizSession,
+  clearCustomQuizSession,
+  submitCustomQuiz,
+} from '../api/customQuiz'
 import ButtonOffset from '../components/ui/ButtonOffset'
 import MetricArcade from '../components/ui/MetricArcade'
 import BadgeArcade from '../components/ui/BadgeArcade'
@@ -20,7 +25,7 @@ import { resolveStudentId } from '../utils/resolveStudentId'
 import GameMasterCard from '../components/gameMaster/GameMasterCard'
 import { quizPhaseTransition, staggerItem } from '../components/motion/motionPresets'
 
-const QUESTION_TIME_SECONDS = 15
+const DEFAULT_QUESTION_TIME_SECONDS = 15
 
 const QuizThemeFab = () => (
   <div className="fixed top-6 right-6 z-50">
@@ -65,7 +70,8 @@ const Quiz = () => {
   const [streak, setStreak] = useState(0)
   const [xpEarned, setXpEarned] = useState(0)
   const [events, setEvents] = useState([])
-  const [timeLeft, setTimeLeft] = useState(QUESTION_TIME_SECONDS)
+  const [timeLeft, setTimeLeft] = useState(DEFAULT_QUESTION_TIME_SECONDS)
+  const [questionTimeSeconds, setQuestionTimeSeconds] = useState(DEFAULT_QUESTION_TIME_SECONDS)
   const [selectedIndex, setSelectedIndex] = useState(null)
   const [answers, setAnswers] = useState([])
   const [loading, setLoading] = useState(false)
@@ -87,38 +93,69 @@ const Quiz = () => {
     }
     return null
   })
+  const [customQuiz, setCustomQuiz] = useState(() => {
+    if (location.state?.fromCustom) {
+      return loadCustomQuizSession()
+    }
+    return null
+  })
+  const [customQuizResult, setCustomQuizResult] = useState(null)
 
   // Synchronize state and reset quiz elements when location/navigation state changes
   useEffect(() => {
     const stateTopic = location.state?.topic || null
     const fromReader = location.state?.fromReader || false
+    const fromCustom = location.state?.fromCustom || false
 
-    if (stateTopic) {
+    if (fromCustom) {
+      const customQ = loadCustomQuizSession()
       clearDocumentQuizSession()
       setDocumentQuiz(null)
+      setCustomQuiz(customQ)
+      setTopic(null)
+      setPhase('start')
+      setQuestions([])
+      setError(null)
+      setCustomQuizResult(null)
+    } else if (stateTopic) {
+      clearDocumentQuizSession()
+      clearCustomQuizSession()
+      setDocumentQuiz(null)
+      setCustomQuiz(null)
       setTopic(stateTopic)
       setPhase('start')
       setQuestions([])
       setError(null)
+      setCustomQuizResult(null)
     } else if (fromReader) {
       const docQ = loadDocumentQuizSession()
+      clearCustomQuizSession()
+      setCustomQuiz(null)
       setDocumentQuiz(docQ)
       setTopic(null)
       setPhase('start')
       setQuestions([])
       setError(null)
+      setCustomQuizResult(null)
     } else {
       clearDocumentQuizSession()
+      clearCustomQuizSession()
       setDocumentQuiz(null)
+      setCustomQuiz(null)
       setTopic(null)
       setPhase('start')
       setQuestions([])
       setError(null)
+      setCustomQuizResult(null)
     }
   }, [location])
 
   const isDocumentQuiz = Boolean(documentQuiz?.questions?.length)
+  const isCustomQuiz = Boolean(customQuiz?.questions?.length)
   const documentFilename = documentQuiz?.filename
+  const customQuizLabel = customQuiz?.subject
+  const customQuizChapter = customQuiz?.chapter
+  const timerEnabled = questionTimeSeconds > 0
 
   const currentQuestion = questions[currentIndex]
 
@@ -138,33 +175,46 @@ const Quiz = () => {
   }, [levelUpPending, clearLevelUp])
 
   useEffect(() => {
-    if (phase === 'question' && timeLeft > 0) {
+    if (phase !== 'question' || !timerEnabled) return
+
+    if (timeLeft > 0) {
       const timer = setInterval(() => {
         setTimeLeft(prev => prev - 1)
       }, 1000)
       return () => clearInterval(timer)
     }
-    if (phase === 'question' && timeLeft === 0) {
+    if (timeLeft === 0) {
       handleAnswerSelect(null)
     }
-  }, [phase, timeLeft])
+  }, [phase, timeLeft, timerEnabled])
 
   const handleStart = async () => {
     setLoading(true)
     setError(null)
     setCognitiveResult(null)
     setGameMasterResult(null)
+    setCustomQuizResult(null)
+
+    const perQuestionTimer = isCustomQuiz
+      ? (customQuiz?.timer_seconds ?? DEFAULT_QUESTION_TIME_SECONDS)
+      : DEFAULT_QUESTION_TIME_SECONDS
+    setQuestionTimeSeconds(perQuestionTimer)
+
     const difficulty =
       documentQuiz?.difficulty ??
       student?.suggested_difficulty ??
       (Number(sessionStorage.getItem('sf_quiz_difficulty')) || 5)
     setQuizDifficulty(difficulty)
     try {
-      if (isDocumentQuiz) {
+      if (isCustomQuiz) {
+        setQuestions(customQuiz.questions)
+      } else if (isDocumentQuiz) {
         setQuestions(documentQuiz.questions)
       } else {
         clearDocumentQuizSession()
+        clearCustomQuizSession()
         setDocumentQuiz(null)
+        setCustomQuiz(null)
         const data = await getQuiz(difficulty, topic)
         setQuestions(data.questions || [])
       }
@@ -178,7 +228,7 @@ const Quiz = () => {
       setAnswers([])
       setTotalTimeSeconds(0)
       setQuestionStartedAt(Date.now())
-      setTimeLeft(QUESTION_TIME_SECONDS)
+      setTimeLeft(perQuestionTimer > 0 ? perQuestionTimer : DEFAULT_QUESTION_TIME_SECONDS)
       setSelectedIndex(null)
     } catch (err) {
       setError(err.message || 'Failed to load quiz')
@@ -246,7 +296,7 @@ const Quiz = () => {
   const handleNext = () => {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(prev => prev + 1)
-      setTimeLeft(QUESTION_TIME_SECONDS)
+      setTimeLeft(timerEnabled ? questionTimeSeconds : DEFAULT_QUESTION_TIME_SECONDS)
       setQuestionStartedAt(Date.now())
       setSelectedIndex(null)
       setPhase('question')
@@ -268,8 +318,46 @@ const Quiz = () => {
         })
       )
 
+      const studentId = resolveStudentId(user, student)
+
+      if (isCustomQuiz) {
+        const result = await submitCustomQuiz({
+          student_id: studentId,
+          answers: apiAnswers,
+          difficulty_level: customQuiz?.difficulty_level ?? 2,
+          time_taken: Math.max(totalTimeSeconds, answers.length),
+          subject: customQuiz?.subject,
+          chapter: customQuiz?.chapter,
+        })
+
+        setCustomQuizResult(result)
+
+        const oldLevel = student?.level || 1
+        const newLevel = result.student?.level || result.new_level || oldLevel
+
+        if (newLevel > oldLevel) {
+          setLevelUp({
+            newLevel,
+            learningPath: 'Customized Quiz',
+          })
+        }
+
+        if (result.student) {
+          setStudent(result.student)
+        } else if (user?.student_id) {
+          await refreshStudent(user.student_id)
+        }
+
+        if (result.xp_earned !== undefined) {
+          setXpEarned(result.xp_earned)
+        }
+
+        setPhase('complete')
+        return
+      }
+
       const result = await submitQuiz({
-        student_id: resolveStudentId(user, student),
+        student_id: studentId,
         answers: apiAnswers,
         difficulty: quizDifficulty,
         time_taken: Math.max(totalTimeSeconds, answers.length),
@@ -369,6 +457,10 @@ const Quiz = () => {
   }, [phase])
 
   const goHome = () => {
+    if (isCustomQuiz) {
+      navigate('/app/quiz/custom')
+      return
+    }
     if (isDocumentQuiz) {
       navigate('/app/reader')
       return
@@ -378,7 +470,9 @@ const Quiz = () => {
 
   const goStandardQuiz = () => {
     clearDocumentQuizSession()
+    clearCustomQuizSession()
     setDocumentQuiz(null)
+    setCustomQuiz(null)
     setTopic(null)
     setPhase('start')
     setQuestions([])
@@ -430,22 +524,32 @@ const Quiz = () => {
             SKILL FORGE
           </div>
           <h1 className="font-arcade text-[22px] md:text-[32px] text-space-star tracking-[3px] md:tracking-[4px] mb-2 md:mb-3">
-            {isDocumentQuiz ? 'DOCUMENT QUIZ' : topic ? `PRACTICE: ${topic.toUpperCase()}` : 'ASSESSMENT'}
+            {isCustomQuiz
+              ? 'CUSTOMIZED QUIZ'
+              : isDocumentQuiz
+                ? 'DOCUMENT QUIZ'
+                : topic
+                  ? `PRACTICE: ${topic.toUpperCase()}`
+                  : 'ASSESSMENT'}
           </h1>
           <div className="font-arcade text-[10px] md:text-[12px] text-space-star tracking-[1px] md:tracking-[2px] mb-3 md:mb-4">
-            {isDocumentQuiz
-              ? `SOURCE // ${(documentFilename || 'YOUR DOCUMENT').toUpperCase()}`
-              : topic
-                ? `FOCUS // ${topic.replace('_', ' ').toUpperCase()}`
-                : 'MODE // ADAPTIVE ML'}
+            {isCustomQuiz
+              ? `SUBJECT // ${(customQuizLabel || 'CUSTOM').toUpperCase()}${customQuizChapter ? ` · ${customQuizChapter.toUpperCase()}` : ''}`
+              : isDocumentQuiz
+                ? `SOURCE // ${(documentFilename || 'YOUR DOCUMENT').toUpperCase()}`
+                : topic
+                  ? `FOCUS // ${topic.replace('_', ' ').toUpperCase()}`
+                  : 'MODE // ADAPTIVE ML'}
           </div>
 
           <p className="font-body-space text-[13px] md:text-[16px] text-arcade-secondary leading-relaxed mt-2 max-w-md mx-auto px-1 md:px-2">
-            {isDocumentQuiz
-              ? 'Questions are drawn from the study content you just read. Same scoring rules apply — earn XP, build streaks, and update your learning profile.'
-              : topic
-                ? `Practice quiz focused specifically on ${topic.replace('_', ' ')}. Five questions per run, scored to help you improve your weakness.`
-                : 'Five questions per run, drawn from a larger topic bank. Your speed, accuracy, and mistakes train the learning-style models—not the topic labels alone.'}
+            {isCustomQuiz
+              ? 'AI-generated questions for your chosen subject. Earn XP and INT/WIS — this practice mode does not change your adaptive learning profile or difficulty.'
+              : isDocumentQuiz
+                ? 'Questions are drawn from the study content you just read. Same scoring rules apply — earn XP, build streaks, and update your learning profile.'
+                : topic
+                  ? `Practice quiz focused specifically on ${topic.replace('_', ' ')}. Five questions per run, scored to help you improve your weakness.`
+                  : 'Five questions per run, drawn from a larger topic bank. Your speed, accuracy, and mistakes train the learning-style models—not the topic labels alone.'}
           </p>
 
           <div className="border-b-[2px] md:border-b-[3px] border-dotted border-arcade-primary my-6 md:my-8" />
@@ -453,13 +557,30 @@ const Quiz = () => {
           <div className="grid grid-cols-3 gap-2 md:gap-5 mb-8 md:mb-10">
             <MetricArcade
               label="QUESTIONS"
-              value={String(isDocumentQuiz ? documentQuiz.questions.length : 5).padStart(2, '0')}
+              value={String(
+                isCustomQuiz
+                  ? customQuiz.questions.length
+                  : isDocumentQuiz
+                    ? documentQuiz.questions.length
+                    : 5
+              ).padStart(2, '0')}
             />
             <MetricArcade
               label="DIFFICULTY"
-              value={String(quizDifficulty).padStart(2, '0')}
+              value={
+                isCustomQuiz
+                  ? (customQuiz.difficulty_label || 'MED').slice(0, 3).toUpperCase()
+                  : String(quizDifficulty).padStart(2, '0')
+              }
             />
-            <MetricArcade label="TIME/Q" value="15S" />
+            <MetricArcade
+              label="TIME/Q"
+              value={
+                isCustomQuiz && customQuiz.timer_seconds === 0
+                  ? 'OFF'
+                  : `${isCustomQuiz ? customQuiz.timer_seconds : DEFAULT_QUESTION_TIME_SECONDS}S`
+              }
+            />
           </div>
 
           <div className="flex flex-col items-center gap-2">
@@ -469,13 +590,17 @@ const Quiz = () => {
             <span className="font-arcade text-[7px] md:text-[8px] text-arcade-secondary tracking-[1px] opacity-70">
               or press SPACEBAR
             </span>
-            {(isDocumentQuiz || topic) && (
+            {(isDocumentQuiz || isCustomQuiz || topic) && (
               <button
                 type="button"
                 onClick={goStandardQuiz}
                 className="font-arcade text-[7px] md:text-[8px] text-arcade-secondary tracking-[1px] mt-3 underline underline-offset-2 hover:text-space-star"
               >
-                {isDocumentQuiz ? 'Switch to standard topic quiz' : 'Switch to standard adaptive quiz'}
+                {isCustomQuiz
+                  ? 'Switch to standard adaptive quiz'
+                  : isDocumentQuiz
+                    ? 'Switch to standard topic quiz'
+                    : 'Switch to standard adaptive quiz'}
               </button>
             )}
           </div>
@@ -502,18 +627,22 @@ const Quiz = () => {
               Q.{String(currentIndex + 1).padStart(2, '0')}/{String(questions.length).padStart(2, '0')}
             </div>
             <div
-              className={`border-[2px] md:border-[3px] border-dotted px-2 md:px-3 py-1 ${timeLeft <= 5 ? 'border-arcade-danger' : 'border-arcade-primary'}`}
+              className={`border-[2px] md:border-[3px] border-dotted px-2 md:px-3 py-1 ${timerEnabled && timeLeft <= 5 ? 'border-arcade-danger' : 'border-arcade-primary'}`}
               style={{ borderRadius: '0px' }}
             >
               <span className="font-arcade text-[10px] md:text-[12px] text-space-star tracking-[2px]">
-                00:{String(timeLeft).padStart(2, '0')}
+                {timerEnabled
+                  ? `00:${String(timeLeft).padStart(2, '0')}`
+                  : 'NO LIMIT'}
               </span>
             </div>
           </motion.div>
 
-          <div className="mb-4 md:mb-6">
-            <ProgressRaw value={(timeLeft / QUESTION_TIME_SECONDS) * 100} />
-          </div>
+          {timerEnabled && (
+            <div className="mb-4 md:mb-6">
+              <ProgressRaw value={(timeLeft / questionTimeSeconds) * 100} />
+            </div>
+          )}
 
           <motion.div
             className="border-l-[4px] md:border-l-[6px] border-arcade-primary pl-4 md:pl-7 mt-4 md:mt-6 mb-6 md:mb-10"
@@ -665,11 +794,11 @@ const Quiz = () => {
         </div>
       )
     } else {
-      phaseShellClass += ' flex flex-col items-center justify-start md:justify-center px-4 md:px-6 py-8 md:py-12 gap-6 md:gap-8'
+      phaseShellClass += ' flex flex-col items-center justify-start px-4 md:px-6 pt-20 pb-16 md:py-12 gap-8 md:gap-10 overflow-y-auto min-h-screen'
       phaseContent = (
         <>
           <motion.div
-            className="border-[3px] md:border-[4px] border-dotted border-space-star max-w-xl w-full p-8 md:p-12 mt-8 md:mt-16"
+            className="border-[3px] md:border-[4px] border-dotted border-space-star max-w-xl w-full p-8 md:p-12 shrink-0"
             style={{ borderRadius: '0px' }}
             initial={{ opacity: 0, y: 28, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -717,26 +846,42 @@ const Quiz = () => {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.35 }}
               >
-                <div className="font-arcade text-[10px] md:text-[12px] text-arcade-secondary tracking-[2px] uppercase font-bold">
-                  ML LEARNING STYLE //
-                </div>
-                <div className="font-arcade text-[16px] md:text-[20px] text-space-star tracking-[2px] md:tracking-[3px] mt-3 font-bold">
-                  {(cognitiveResult?.predictions?.decision_tree ||
-                    student?.learning_style ||
-                    'UNKNOWN')
-                    .replace(/_/g, ' ')
-                    .toUpperCase()}
-                </div>
-                {cognitiveResult?.confidence > 0 && (
-                  <div className="font-arcade text-[10px] md:text-[12px] text-arcade-secondary tracking-[1px] mt-3 font-bold">
-                    CONFIDENCE {(cognitiveResult.confidence * 100).toFixed(0)}%
-                    {cognitiveResult.model_agreement ? ' · MODELS AGREE' : ' · ENSEMBLE'}
-                  </div>
-                )}
-                {cognitiveResult?.explanations?.length > 0 && (
-                  <p className="font-body-space text-[12px] md:text-[14px] text-arcade-secondary mt-4 leading-relaxed max-w-md mx-auto">
-                    {cognitiveResult.explanations[0]}
-                  </p>
+                {isCustomQuiz ? (
+                  <>
+                    <div className="font-arcade text-[10px] md:text-[12px] text-arcade-secondary tracking-[2px] uppercase font-bold">
+                      PRACTICE REWARDS //
+                    </div>
+                    <div className="font-arcade text-[14px] md:text-[18px] text-space-star tracking-[2px] mt-3 font-bold">
+                      INT +{customQuizResult?.attribute_delta?.INT ?? 0} · WIS +{customQuizResult?.attribute_delta?.WIS ?? 0}
+                    </div>
+                    <p className="font-body-space text-[12px] md:text-[14px] text-arcade-secondary mt-4 leading-relaxed max-w-md mx-auto">
+                      Customized quiz results do not affect your adaptive learning profile or session history.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="font-arcade text-[10px] md:text-[12px] text-arcade-secondary tracking-[2px] uppercase font-bold">
+                      ML LEARNING STYLE //
+                    </div>
+                    <div className="font-arcade text-[16px] md:text-[20px] text-space-star tracking-[2px] md:tracking-[3px] mt-3 font-bold">
+                      {(cognitiveResult?.predictions?.decision_tree ||
+                        student?.learning_style ||
+                        'UNKNOWN')
+                        .replace(/_/g, ' ')
+                        .toUpperCase()}
+                    </div>
+                    {cognitiveResult?.confidence > 0 && (
+                      <div className="font-arcade text-[10px] md:text-[12px] text-arcade-secondary tracking-[1px] mt-3 font-bold">
+                        CONFIDENCE {(cognitiveResult.confidence * 100).toFixed(0)}%
+                        {cognitiveResult.model_agreement ? ' · MODELS AGREE' : ' · ENSEMBLE'}
+                      </div>
+                    )}
+                    {cognitiveResult?.explanations?.length > 0 && (
+                      <p className="font-body-space text-[12px] md:text-[14px] text-arcade-secondary mt-4 leading-relaxed max-w-md mx-auto">
+                        {cognitiveResult.explanations[0]}
+                      </p>
+                    )}
+                  </>
                 )}
               </motion.div>
 
@@ -770,13 +915,19 @@ const Quiz = () => {
                       BACK TO READER
                     </ButtonOffset>
                   )}
+                  {isCustomQuiz && (
+                    <ButtonOffset size="md" onClick={() => navigate('/app/quiz/custom')}>
+                      NEW CUSTOM QUIZ
+                    </ButtonOffset>
+                  )}
                 </div>
               </motion.div>
             </div>
           </motion.div>
 
+          {!isCustomQuiz && (
           <motion.div
-            className="max-w-lg w-full"
+            className="max-w-lg w-full shrink-0 mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.55 }}
@@ -790,6 +941,7 @@ const Quiz = () => {
               compact
             />
           </motion.div>
+          )}
         </>
       )
     }
@@ -799,7 +951,10 @@ const Quiz = () => {
     <>
       <div className="relative min-h-screen bg-arcade-surface">
         <QuizThemeFab />
-        <QuizExitButton onClick={goHome} label={isDocumentQuiz ? '← READER' : '← HOME'} />
+        <QuizExitButton
+          onClick={goHome}
+          label={isCustomQuiz ? '← CUSTOM' : isDocumentQuiz ? '← READER' : '← HOME'}
+        />
         <AnimatePresence mode="wait">
           {phaseContent && (
             <QuizPhase key={phaseKey} className={phaseShellClass}>

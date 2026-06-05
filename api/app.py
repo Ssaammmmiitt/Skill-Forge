@@ -20,7 +20,7 @@ sys.path.append(str(PROJECT_ROOT))
 
 from api.exceptions import ApiError
 from api.responses import error
-from api.routers import auth, game, ml, reader, todos
+from api.routers import auth, custom_quiz, game, ml, reader, todos
 from data.models import create_tables, get_db
 
 
@@ -67,6 +67,7 @@ def create_app() -> FastAPI:
 
     app.include_router(auth.router)
     app.include_router(game.router)
+    app.include_router(custom_quiz.router)
     app.include_router(ml.router)
     app.include_router(todos.router)
     app.include_router(reader.router)

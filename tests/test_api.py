@@ -297,3 +297,74 @@ def test_get_quiz_with_topic(client):
     res_data = response.json()
     assert res_data["error"] is None
     assert len(res_data["data"]["questions"]) == 5
+
+
+def test_custom_quiz_subjects(client):
+    response = client.get("/api/custom-quiz/subjects")
+    assert response.status_code == 200
+    res_data = response.json()
+    assert res_data["error"] is None
+    assert len(res_data["data"]["subjects"]) >= 10
+    assert res_data["data"]["max_questions"] == 10
+    for subject in res_data["data"]["subjects"]:
+        assert len(subject["chapters"]) == 10
+
+
+def test_submit_custom_quiz_valid(client):
+    payload = {
+        "student_id": "fixture_id",
+        "answers": [
+            {"question_id": "cq1", "chosen_index": 0, "correct_index": 0, "topic": "mathematics"},
+            {"question_id": "cq2", "chosen_index": 1, "correct_index": 1, "topic": "mathematics"},
+            {"question_id": "cq3", "chosen_index": 0, "correct_index": 1, "topic": "mathematics"},
+        ],
+        "difficulty_level": 2,
+        "time_taken": 90,
+        "subject": "Mathematics",
+        "chapter": "Algebra",
+    }
+    response = client.post("/api/custom-quiz/submit", json=payload)
+    assert response.status_code == 200
+    res_data = response.json()
+    assert res_data["error"] is None
+    assert res_data["data"]["practice_mode"] is True
+    assert res_data["data"]["xp_earned"] >= 50
+    assert "attribute_delta" in res_data["data"]
+    assert res_data["data"]["student"]["INT"] >= 50
+
+
+def test_submit_custom_quiz_does_not_add_session(client):
+    db_conn = get_db()
+
+    def count_sessions():
+        return db_conn.execute(
+            "SELECT COUNT(*) FROM sessions WHERE student_id = ?",
+            ("fixture_id",),
+        ).fetchone()[0]
+
+    before = count_sessions()
+    payload = {
+        "student_id": "fixture_id",
+        "answers": [
+            {"question_id": "cq1", "chosen_index": 0, "correct_index": 0, "topic": "biology"},
+        ],
+        "difficulty_level": 1,
+        "time_taken": 30,
+    }
+    response = client.post("/api/custom-quiz/submit", json=payload)
+    assert response.status_code == 200
+    after = count_sessions()
+    assert after == before
+
+
+def test_generate_custom_quiz_requires_auth(client):
+    response = client.post(
+        "/api/custom-quiz/generate",
+        json={
+            "subject": "mathematics",
+            "difficulty_level": 2,
+            "question_count": 5,
+            "timer_seconds": 30,
+        },
+    )
+    assert response.status_code == 401

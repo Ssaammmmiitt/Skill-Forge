@@ -61,7 +61,7 @@ const Profile = () => {
   }
 
   const levelInfo = getLevelInfo(student.xp, XP_PER_LEVEL)
-  const displayLevel = student.level ?? levelInfo.currentLevel
+  const displayLevel = levelInfo.currentLevel
 
   return (
     <motion.div
@@ -173,12 +173,12 @@ const Profile = () => {
             </div>
 
             <div className="flex flex-col items-center">
-              <StatRing label="LEVEL" value={displayLevel * 10} size={120} system="star" />
+              <StatRing label="LEVEL" value={displayLevel} size={120} system="star" />
               <div className="font-space font-bold text-[20px] text-raw-white mt-4">
-                {displayLevel * 10}
+                {displayLevel}
               </div>
               <div className="font-body-space text-[12px] text-space-nebula uppercase">
-                Level Score
+                Level
               </div>
             </div>
           </div>

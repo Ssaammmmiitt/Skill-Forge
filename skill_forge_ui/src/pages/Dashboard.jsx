@@ -148,6 +148,9 @@ const Dashboard = () => {
           <ButtonOffset size="md" className="m-0" onClick={() => navigate('/quiz')}>
             START QUIZ
           </ButtonOffset>
+          <ButtonOffset size="md" className="m-0" onClick={() => navigate('/app/quiz/custom')}>
+            CUSTOM QUIZ
+          </ButtonOffset>
           <ButtonOffset size="md" className="m-0" onClick={() => navigate('/app/log')}>
             LOG ACTIVITY
           </ButtonOffset>
