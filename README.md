@@ -2,9 +2,12 @@
 
 > Adaptive learning platform with RPG-style progression, ML-powered personalization, and a unique **FUSION** design system combining brutalism, cosmic aesthetics, and retro arcade vibes.
 
+**Repository:** [github.com/Ssaammmmiitt/Skill-Forge](https://github.com/Ssaammmmiitt/Skill-Forge)
+
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.9%2B-blue)
 ![React](https://img.shields.io/badge/react-18-61dafb)
+[![GitHub](https://img.shields.io/badge/GitHub-Ssaammmmiitt%2FSkill--Forge-181717?logo=github)](https://github.com/Ssaammmmiitt/Skill-Forge)
 
 ---
 
@@ -47,7 +50,7 @@ Skill Forge is an adaptive learning platform that gamifies education through:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/Skill-Forge.git
+git clone https://github.com/Ssaammmmiitt/Skill-Forge.git
 cd Skill-Forge
 ```
 
@@ -421,11 +424,13 @@ See **AI_REPORT.md** for methodology, metrics, and limitations.
 
 ## Contributing
 
-1. Fork the repository
+Contributions are welcome! Fork the repo, open a PR, and describe your changes.
+
+1. Fork [Skill-Forge](https://github.com/Ssaammmmiitt/Skill-Forge)
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+5. Open a Pull Request on [GitHub](https://github.com/Ssaammmmiitt/Skill-Forge/pulls)
 
 ---
 
@@ -446,11 +451,12 @@ This project is licensed under the MIT License. See `LICENSE` file for details.
 
 ## Contact & Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/Skill-Forge/issues)
+- **Repository**: [github.com/Ssaammmmiitt/Skill-Forge](https://github.com/Ssaammmmiitt/Skill-Forge)
+- **Issues**: [GitHub Issues](https://github.com/Ssaammmmiitt/Skill-Forge/issues)
 - **Documentation**: See `skill_forge_ui/PROJECT_REPORT.md` for detailed frontend docs
 - **Design System**: See `DESIGN.md` (repo root) for full design specification  
 - **AI / ML**: See `AI_REPORT.md`
 
 ---
 
-**Built with ❤️ by the Skill Forge team**
+**Built with ❤️ by the Skill Forge team · [View on GitHub](https://github.com/Ssaammmmiitt/Skill-Forge)**
