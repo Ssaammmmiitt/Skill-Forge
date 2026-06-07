@@ -19,7 +19,7 @@ import MetricArcade from '../components/ui/MetricArcade'
 import BadgeArcade from '../components/ui/BadgeArcade'
 import ProgressRaw from '../components/ui/ProgressRaw'
 import Spinner from '../components/ui/Spinner'
-import Modal from '../components/ui/Modal'
+import CardArcade from '../components/ui/CardArcade'
 import ThemeToggle from '../components/ui/ThemeToggle'
 import { resolveStudentId } from '../utils/resolveStudentId'
 import GameMasterCard from '../components/gameMaster/GameMasterCard'
@@ -183,10 +183,10 @@ const Quiz = () => {
       }, 1000)
       return () => clearInterval(timer)
     }
-    if (timeLeft === 0) {
+    if (timeLeft === 0 && currentQuestion && selectedIndex === null) {
       handleAnswerSelect(null)
     }
-  }, [phase, timeLeft, timerEnabled])
+  }, [phase, timeLeft, timerEnabled, currentQuestion, selectedIndex])
 
   const handleStart = async () => {
     setLoading(true)
@@ -241,11 +241,15 @@ const Quiz = () => {
   const handleAnswerSelect = (index) => {
     if (selectedIndex !== null) return
 
+    const question = questions[currentIndex]
+    if (!question || question.correct_index == null) return
+
     setSelectedIndex(index)
 
     setTimeout(() => {
-      const isCorrect = index === currentQuestion.correct_index
+      const isCorrect = index === question.correct_index
       const isTimeout = index === null
+      const correctOption = question.options?.[question.correct_index] ?? ''
 
       let questionXP = 0
       let newEvents = []
@@ -273,13 +277,15 @@ const Quiz = () => {
       setTotalTimeSeconds((prev) => prev + elapsed)
 
       setAnswers(prev => [...prev, {
-        question_id: currentQuestion.id,
+        question_id: question.id,
         chosen_index: index,
-        correct_index: currentQuestion.correct_index,
-        topic: currentQuestion.topic,
+        correct_index: question.correct_index,
+        topic: question.topic,
         _ui_xp: questionXP,
         _ui_correct: isCorrect,
         _ui_timeout: isTimeout,
+        _ui_correct_index: question.correct_index,
+        _ui_correct_option: correctOption,
       }])
 
       addToast({
@@ -336,10 +342,7 @@ const Quiz = () => {
         const newLevel = result.student?.level || result.new_level || oldLevel
 
         if (newLevel > oldLevel) {
-          setLevelUp({
-            newLevel,
-            learningPath: 'Customized Quiz',
-          })
+          setLevelUp({ newLevel, isCustomQuiz: true })
         }
 
         if (result.student) {
@@ -721,12 +724,12 @@ const Quiz = () => {
             style={{ borderRadius: '0px' }}
           >
             <span className="font-arcade text-[10px] md:text-[12px] text-arcade-primary mr-3 md:mr-5 min-w-[16px] md:min-w-[20px] inline-block">
-              {String.fromCharCode(65 + currentQuestion.correct_index)}
+              {String.fromCharCode(65 + (lastAnswer._ui_correct_index ?? 0))}
             </span>
             <span
               className={`font-arcade text-[9px] md:text-[10px] tracking-[1px] leading-relaxed ${isCorrect ? 'text-space-success' : 'text-arcade-secondary'}`}
             >
-              {currentQuestion.options[currentQuestion.correct_index]}
+              {lastAnswer._ui_correct_option ?? ''}
             </span>
           </div>
         </motion.div>
@@ -854,9 +857,6 @@ const Quiz = () => {
                     <div className="font-arcade text-[14px] md:text-[18px] text-space-star tracking-[2px] mt-3 font-bold">
                       INT +{customQuizResult?.attribute_delta?.INT ?? 0} · WIS +{customQuizResult?.attribute_delta?.WIS ?? 0}
                     </div>
-                    <p className="font-body-space text-[12px] md:text-[14px] text-arcade-secondary mt-4 leading-relaxed max-w-md mx-auto">
-                      Customized quiz results do not affect your adaptive learning profile or session history.
-                    </p>
                   </>
                 ) : (
                   <>
@@ -907,8 +907,8 @@ const Quiz = () => {
                   <ButtonOffset size="md" onClick={handleStart}>
                     RETRY
                   </ButtonOffset>
-                  <ButtonOffset size="md" onClick={() => navigate('/app/analytics')}>
-                    VIEW STATS
+                  <ButtonOffset size="md" onClick={() => navigate(isCustomQuiz ? '/app/quiz/custom' : '/app/analytics')}>
+                    {isCustomQuiz ? 'NEW CUSTOM QUIZ' : 'VIEW STATS'}
                   </ButtonOffset>
                   {isDocumentQuiz && (
                     <ButtonOffset size="md" onClick={() => navigate('/app/reader')}>
@@ -916,8 +916,8 @@ const Quiz = () => {
                     </ButtonOffset>
                   )}
                   {isCustomQuiz && (
-                    <ButtonOffset size="md" onClick={() => navigate('/app/quiz/custom')}>
-                      NEW CUSTOM QUIZ
+                    <ButtonOffset size="md" onClick={() => navigate('/dashboard')}>
+                      DASHBOARD
                     </ButtonOffset>
                   )}
                 </div>
@@ -964,43 +964,42 @@ const Quiz = () => {
         </AnimatePresence>
       </div>
 
-      <Modal
-      open={levelUpPending}
-      onClose={() => {
-        clearLevelUp()
-        if (phase === 'complete') {
-          if (isDocumentQuiz) navigate('/app/reader')
-          else if (topic) navigate('/quiz', { replace: true, state: {} })
-          else navigate('/app/analytics')
-        }
-      }}
-      system="arcade"
-      title="LEVEL UP!"
-    >
-      <div className="text-center">
-        <div className="mb-6">
-          <MetricArcade
-            label="NEW LEVEL"
-            value={levelUpData?.newLevel || ''}
-          />
-        </div>
-        <p className="font-arcade text-[8px] text-arcade-secondary tracking-[2px] mt-4">
-          UNLOCKED: {levelUpData?.learningPath?.toUpperCase() || 'NEW PATH'}
-        </p>
-        <div className="mt-6 border-[3px] border-dotted border-arcade-primary p-4 inline-block">
-          <ButtonOffset size="md" onClick={() => {
-            clearLevelUp()
-            if (phase === 'complete') {
-              if (isDocumentQuiz) navigate('/app/reader')
-              else if (topic) navigate('/quiz', { replace: true, state: {} })
-              else navigate('/app/analytics')
-            }
-          }}>
-            {isDocumentQuiz ? 'BACK TO READER' : topic ? 'BACK TO QUIZ' : 'VIEW ANALYTICS'}
-          </ButtonOffset>
-        </div>
-      </div>
-    </Modal>
+      <AnimatePresence>
+        {levelUpPending && (
+          <motion.aside
+            role="status"
+            aria-live="polite"
+            className="fixed top-20 md:top-24 right-4 md:right-8 z-[100] w-[min(100vw-2rem,320px)] pointer-events-auto"
+            initial={{ opacity: 0, x: 48, scale: 0.96 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 48, scale: 0.96 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <CardArcade className="shadow-2xl">
+              <div className="font-arcade text-[10px] md:text-[12px] text-space-star tracking-[2px] mb-4">
+                LEVEL UP!
+              </div>
+              <MetricArcade
+                label="NEW LEVEL"
+                value={String(levelUpData?.newLevel ?? '')}
+                large
+              />
+              {!levelUpData?.isCustomQuiz && levelUpData?.learningPath && (
+                <p className="font-arcade text-[7px] md:text-[8px] text-arcade-secondary tracking-[1px] mt-4 leading-relaxed">
+                  UNLOCKED: {levelUpData.learningPath.toUpperCase()}
+                </p>
+              )}
+              <div className="mt-5">
+                <ButtonOffset size="sm" onClick={() => clearLevelUp()}>
+                  NICE!
+                </ButtonOffset>
+              </div>
+            </CardArcade>
+          </motion.aside>
+        )}
+      </AnimatePresence>
     </>
   )
 }

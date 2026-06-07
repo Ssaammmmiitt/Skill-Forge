@@ -184,9 +184,9 @@ const Dashboard = () => {
                 <BadgeStar status={getDifficultyStatus(session.difficulty)}>
                   Difficulty {session.difficulty}
                 </BadgeStar>
-                <span className="font-mono text-[#999] text-xs">
+                {/* <span className="font-mono text-[#999] text-xs">
                   {Math.floor(session.time_taken / 60)}:{String(session.time_taken % 60).padStart(2, '0')}
-                </span>
+                </span> */}
               </div>
             </div>
           ))
