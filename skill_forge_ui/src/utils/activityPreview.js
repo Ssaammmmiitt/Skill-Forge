@@ -87,6 +87,29 @@ export const previewTaskEffects = (taskCount, tasksAlreadyRewarded = 0) => {
   return {
     wisGain: rewarded * WIS_PER_TASK,
     rewardedTasks: rewarded,
+    remainingToday: remaining,
     note: rewarded < count ? `Daily cap: ${TASK_MAX_PER_DAY} tasks` : null,
+  }
+}
+
+const taskWisStorageKey = (studentId, taskDate) =>
+  `sf_task_wis_${studentId}_${taskDate}`
+
+/** Persist how many task WIS syncs were recorded today (browser session hint for UI caps). */
+export const loadTasksRewardedToday = (studentId, taskDate) => {
+  if (!studentId || !taskDate) return 0
+  try {
+    return Number(sessionStorage.getItem(taskWisStorageKey(studentId, taskDate)) || 0)
+  } catch {
+    return 0
+  }
+}
+
+export const saveTasksRewardedToday = (studentId, taskDate, count) => {
+  if (!studentId || !taskDate) return
+  try {
+    sessionStorage.setItem(taskWisStorageKey(studentId, taskDate), String(count))
+  } catch {
+    /* ignore quota errors */
   }
 }

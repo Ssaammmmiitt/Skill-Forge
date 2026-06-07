@@ -16,7 +16,13 @@ import {
   copyIncompleteTodos,
 } from '../api/todos'
 import { logActivity } from '../api/student'
-import { previewTaskEffects, TASK_MAX_PER_DAY, WIS_PER_TASK } from '../utils/activityPreview'
+import {
+  previewTaskEffects,
+  loadTasksRewardedToday,
+  saveTasksRewardedToday,
+  TASK_MAX_PER_DAY,
+  WIS_PER_TASK,
+} from '../utils/activityPreview'
 import Spinner from '../components/ui/Spinner'
 
 const DailyTasks = () => {
@@ -33,11 +39,18 @@ const DailyTasks = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
-  const [rewarding, setRewarding] = useState(false)
+  const [syncingTodoId, setSyncingTodoId] = useState(null)
+  const [tasksRewardedToday, setTasksRewardedToday] = useState(0)
 
   useEffect(() => {
     document.title = 'SKILL FORGE // DAILY TASKS'
   }, [])
+
+  useEffect(() => {
+    if (studentId && taskDate) {
+      setTasksRewardedToday(loadTasksRewardedToday(studentId, taskDate))
+    }
+  }, [studentId, taskDate])
 
   const loadTodos = useCallback(async () => {
     if (!studentId) {
@@ -60,6 +73,9 @@ const DailyTasks = () => {
   useEffect(() => {
     loadTodos()
   }, [loadTodos])
+
+  const wisRemainingToday = Math.max(0, TASK_MAX_PER_DAY - tasksRewardedToday)
+  const atDailyCap = wisRemainingToday === 0
 
   const handleAdd = async () => {
     const label = newLabel.trim()
@@ -114,35 +130,55 @@ const DailyTasks = () => {
     }
   }
 
-  const handleRewardWis = async () => {
-    const done = todos.filter((t) => t.completed).length
-    if (done === 0 || !studentId) return
-    setRewarding(true)
+  const handleSyncTaskWis = async (todo) => {
+    if (!todo.completed || !studentId || syncingTodoId) return
+
+    const preview = previewTaskEffects(1, tasksRewardedToday)
+    if (preview.rewardedTasks === 0) {
+      addToast({
+        message: `Daily WIS cap reached (${TASK_MAX_PER_DAY} syncs per day)`,
+        type: 'error',
+      })
+      return
+    }
+
+    setSyncingTodoId(todo.todo_id)
     try {
       const result = await logActivity({
         student_id: studentId,
         activity: 'task_done',
-        value: done,
+        value: 1,
         activity_date: taskDate,
       })
       await refreshStudent(studentId)
+
       const wis = result.delta?.WIS ?? 0
-      const note = result.notes?.[0]
-      addToast({
-        message: wis > 0
-          ? `+${wis} WIS FROM ${result.delta?.WIS ? Math.ceil(wis / WIS_PER_TASK) : 0} TASK(S)`
-          : (note || 'No WIS gained — daily cap may be reached'),
-        type: wis > 0 ? 'info' : 'error',
-      })
+      if (wis > 0) {
+        const rewarded = Math.max(1, Math.round(wis / WIS_PER_TASK))
+        const nextCount = Math.min(TASK_MAX_PER_DAY, tasksRewardedToday + rewarded)
+        setTasksRewardedToday(nextCount)
+        saveTasksRewardedToday(studentId, taskDate, nextCount)
+
+        await deleteTodo(todo.todo_id)
+        await loadTodos()
+
+        addToast({
+          message: `+${wis} WIS · "${todo.label}" synced and removed`,
+          type: 'info',
+        })
+      } else {
+        const note =
+          result.notes?.[0] || 'No WIS gained — daily cap may already be reached'
+        setTasksRewardedToday(TASK_MAX_PER_DAY)
+        saveTasksRewardedToday(studentId, taskDate, TASK_MAX_PER_DAY)
+        addToast({ message: note, type: 'error' })
+      }
     } catch (err) {
-      addToast({ message: err.message || 'Could not log rewards', type: 'error' })
+      addToast({ message: err.message || 'Could not sync WIS', type: 'error' })
     } finally {
-      setRewarding(false)
+      setSyncingTodoId(null)
     }
   }
-
-  const doneCount = todos.filter((t) => t.completed).length
-  const taskPreview = previewTaskEffects(doneCount)
 
   const total = todos.length
   const progress = total > 0 ? (completedCount / total) * 100 : 0
@@ -157,12 +193,12 @@ const DailyTasks = () => {
       <div className="max-w-3xl mx-auto">
         <PageIntro
           title="DAILY TASKS"
-          purpose="Build your own checklist for each day. Tasks are saved per date so you can plan tomorrow or review yesterday. Sync WIS rewards up to 5 completed tasks per day."
+          purpose="Build your own checklist for each day. Complete a task, sync WIS for that task, and it is removed from the list. You can add the same task again anytime to log it once more."
           steps={[
             'Pick a date with the arrows or date picker',
-            'Add tasks - they stay on that day only',
-            'Check off work as you go',
-            `Use “Sync WIS” for up to ${TASK_MAX_PER_DAY} tasks/day (+${WIS_PER_TASK} WIS each)`,
+            'Add tasks — duplicate names are allowed',
+            'Check off a task when done, then press Sync WIS on that row',
+            `Up to ${TASK_MAX_PER_DAY} syncs per day (+${WIS_PER_TASK} WIS each); synced tasks are removed automatically`,
           ]}
         />
 
@@ -207,6 +243,12 @@ const DailyTasks = () => {
               style={{ backgroundColor: 'var(--raw-border)', width: `${progress}%` }}
             />
           </div>
+          <p className="font-mono text-[11px] text-raw-text-secondary mt-3">
+            WIS syncs today: {tasksRewardedToday} / {TASK_MAX_PER_DAY}
+            {atDailyCap && (
+              <span className="text-raw-text-tertiary"> · daily cap reached</span>
+            )}
+          </p>
         </div>
 
         <div
@@ -231,6 +273,9 @@ const DailyTasks = () => {
               {saving ? 'ADDING…' : 'ADD'}
             </ButtonOffset>
           </div>
+          <p className="font-mono text-[11px] text-raw-text-tertiary mt-3">
+            Same task name can be added again after you sync and remove it.
+          </p>
           <div className="flex flex-wrap gap-3 mt-4">
             <ButtonOffset size="sm" onClick={handleCopyYesterday}>
               Copy incomplete from yesterday
@@ -266,61 +311,70 @@ const DailyTasks = () => {
 
           {!loading && todos.length > 0 && (
             <ul className="space-y-0">
-              {todos.map((todo) => (
-                <li
-                  key={todo.todo_id}
-                  className="border-b-[2px] border-raw-border py-3 flex items-start gap-3 group"
-                >
-                  <button
-                    type="button"
-                    onClick={() => handleToggle(todo)}
-                    className={`mt-0.5 w-5 h-5 shrink-0 border-[2px] border-raw-border flex items-center justify-center ${todo.completed ? 'bg-raw-border' : 'bg-raw-bg'
-                      }`}
-                    style={{ borderRadius: 0 }}
-                    aria-label={todo.completed ? 'Mark incomplete' : 'Mark complete'}
-                  >
-                    {todo.completed && (
-                      <span className="font-raw text-raw-bg text-[10px]">✓</span>
-                    )}
-                  </button>
-                  <span
-                    className={`flex-1 font-raw text-[11px] uppercase tracking-wide leading-relaxed ${todo.completed
-                      ? 'text-raw-text-tertiary line-through'
-                      : 'text-raw-text'
-                      }`}
-                  >
-                    {todo.label}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(todo.todo_id)}
-                    className="font-mono text-[10px] text-raw-text-tertiary hover:text-raw-error uppercase opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    Remove
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+              {todos.map((todo) => {
+                const isSyncing = syncingTodoId === todo.todo_id
+                const canSync = todo.completed && !atDailyCap && !isSyncing
+                const singlePreview = previewTaskEffects(1, tasksRewardedToday)
 
-          {completedCount > 0 && (
-            <div className="mt-6 pt-6 border-t-[2px] border-raw-border">
-              <p className="font-mono text-xs text-raw-text-secondary mb-3">
-                Sync rewards up to {TASK_MAX_PER_DAY} completed tasks per day (+{WIS_PER_TASK} WIS each).
-                {taskPreview.wisGain > 0 && (
-                  <span className="block mt-1 text-raw-text">
-                    Preview: +{taskPreview.wisGain} WIS ({taskPreview.rewardedTasks} task{taskPreview.rewardedTasks !== 1 ? 's' : ''})
-                  </span>
-                )}
-              </p>
-              <ButtonOffset
-                size="md"
-                onClick={handleRewardWis}
-                disabled={rewarding}
-              >
-                {rewarding ? 'SYNCING…' : `SYNC WIS (+${taskPreview.wisGain})`}
-              </ButtonOffset>
-            </div>
+                return (
+                  <li
+                    key={todo.todo_id}
+                    className="border-b-[2px] border-raw-border py-3 flex items-start gap-3 group"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleToggle(todo)}
+                      disabled={Boolean(syncingTodoId)}
+                      className={`mt-0.5 w-5 h-5 shrink-0 border-[2px] border-raw-border flex items-center justify-center ${todo.completed ? 'bg-raw-border' : 'bg-raw-bg'
+                        }`}
+                      style={{ borderRadius: 0 }}
+                      aria-label={todo.completed ? 'Mark incomplete' : 'Mark complete'}
+                    >
+                      {todo.completed && (
+                        <span className="font-raw text-raw-bg text-[10px]">✓</span>
+                      )}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <span
+                        className={`font-raw text-[11px] uppercase tracking-wide leading-relaxed block ${todo.completed
+                          ? 'text-raw-text-tertiary line-through'
+                          : 'text-raw-text'
+                          }`}
+                      >
+                        {todo.label}
+                      </span>
+                      {todo.completed && (
+                        <p className="font-mono text-[10px] text-raw-text-tertiary mt-1">
+                          Done — sync WIS to claim reward and remove this task
+                        </p>
+                      )}
+                    </div>
+                    {todo.completed && (
+                      <ButtonOffset
+                        size="sm"
+                        onClick={() => handleSyncTaskWis(todo)}
+                        disabled={!canSync}
+                        className="shrink-0"
+                      >
+                        {isSyncing
+                          ? 'SYNCING…'
+                          : atDailyCap
+                            ? 'CAP FULL'
+                            : `SYNC WIS (+${singlePreview.wisGain})`}
+                      </ButtonOffset>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(todo.todo_id)}
+                      disabled={Boolean(syncingTodoId)}
+                      className="font-mono text-[10px] text-raw-text-tertiary hover:text-raw-error uppercase opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                    >
+                      Remove
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
           )}
         </div>
 
