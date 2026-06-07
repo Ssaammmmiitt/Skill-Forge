@@ -1,6 +1,7 @@
 import sys
 import os
 import numpy as np
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -88,7 +89,7 @@ def main():
         accuracy = correct / len(y_test_t)
         print(f"Neural Net - Test accuracy: {accuracy:.2f}")
         
-    # 7. Save model
+    # 7. Save model to 'models/saved'
     os.makedirs("models/saved", exist_ok=True)
     torch.save(model.state_dict(), "models/saved/nn_model.pt")
     torch.save(model, "models/saved/nn_model_full.pt")

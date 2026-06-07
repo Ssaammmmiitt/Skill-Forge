@@ -1,5 +1,6 @@
 """Quiz question pools - 5 questions sampled per session per difficulty band."""
 
+
 QUESTIONS_BY_LEVEL = {
     1: [
         {"id": "b1_01", "question": "What is 2 + 2?", "options": ["3", "4", "5", "6"], "correct_index": 1, "topic": "mathematics"},

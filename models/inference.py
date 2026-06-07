@@ -30,9 +30,9 @@ class SkillForgeNet(nn.Module):
         self.layer3 = nn.Linear(32, 4)
 
     def forward(self, x):
-        x = self.layer1(x)
-        x = self.layer2(x)
-        return self.layer3(x)
+        x1 = self.layer1(x)
+        x2 = self.layer2(x1)
+        return self.layer3(x2)
 
 
 class ModelRegistry:
