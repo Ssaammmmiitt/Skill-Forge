@@ -1,18 +1,27 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ButtonRaw from '../components/ui/ButtonRaw'
 import { useNotifStore } from '../store/useNotifStore'
 import { useStudentStore } from '../store/useStudentStore'
 import { useAuthStore } from '../store/useAuthStore'
-import { logActivity } from '../api/student'
+import { getActivityTotals, logActivity } from '../api/student'
+import { resolveStudentId } from '../utils/resolveStudentId'
+import {
+  previewStudyEffects,
+  previewSleepEffects,
+  emptyActivityTotals,
+} from '../utils/activityPreview'
+import ActivityPreviewNotes from '../components/activity/ActivityPreviewNotes'
 
 const Logger = () => {
   const navigate = useNavigate()
   const addToast = useNotifStore(state => state.addToast)
-  const updateAttributes = useStudentStore(state => state.updateAttributes)
+  const applyActivityResult = useStudentStore(state => state.applyActivityResult)
+  const refreshStudent = useStudentStore(state => state.refreshStudent)
+  const student = useStudentStore(state => state.student)
   const user = useAuthStore(state => state.user)
+  const studentId = resolveStudentId(user, student)
 
-  // Document title
   useEffect(() => {
     document.title = 'SKILL FORGE // LOG ACTIVITY'
   }, [])
@@ -27,14 +36,31 @@ const Logger = () => {
   const [sleepError, setSleepError] = useState(false)
   const [sleepLoading, setSleepLoading] = useState(false)
   const [sleepErrorMsg, setSleepErrorMsg] = useState('')
+  const [activityTotals, setActivityTotals] = useState(emptyActivityTotals)
 
-  const [tasks, setTasks] = useState([
-    { id: 1, label: 'COMPLETE PRACTICE PROBLEM SET', checked: false },
-    { id: 2, label: 'REVIEW SESSION NOTES', checked: false },
-    { id: 3, label: 'WATCH LECTURE RECAP', checked: false },
-    { id: 4, label: 'SUBMIT WRITTEN SUMMARY', checked: false },
-    { id: 5, label: 'PEER REVIEW EXCHANGE', checked: false }
-  ])
+  const refreshActivityTotals = useCallback(async () => {
+    if (!studentId) return
+    try {
+      const totals = await getActivityTotals(studentId)
+      setActivityTotals(totals)
+    } catch {
+      setActivityTotals(emptyActivityTotals())
+    }
+  }, [studentId])
+
+  useEffect(() => {
+    refreshActivityTotals()
+  }, [refreshActivityTotals])
+
+  const syncAfterActivity = async (result) => {
+    if (result?.updated_attributes) {
+      applyActivityResult(result.updated_attributes)
+    }
+    if (studentId) {
+      await refreshStudent(studentId)
+      await refreshActivityTotals()
+    }
+  }
 
   const handleStudySubmit = async () => {
     const duration = parseFloat(studyDuration)
@@ -47,18 +73,19 @@ const Logger = () => {
     setStudyErrorMsg('')
     try {
       const result = await logActivity({
-        student_id: user?.student_id,
+        student_id: studentId,
         activity: 'study',
-        value: duration
+        value: duration,
       })
 
-      const delta = result.delta || {}
-      updateAttributes(delta)
-
-      const intGain = delta.INT || 0
+      await syncAfterActivity(result)
+      const intGain = result.delta?.INT || 0
+      const energyCost = result.delta?.energy || 0
       addToast({
-        message: `+${intGain} INT`,
-        type: 'info'
+        message: intGain > 0
+          ? `+${intGain} INT · -${Math.abs(energyCost)} ENERGY`
+          : (result.notes?.[0] || 'No INT gained'),
+        type: intGain > 0 ? 'info' : 'error',
       })
 
       setStudyTopic('')
@@ -71,49 +98,51 @@ const Logger = () => {
     }
   }
 
-  const handleSleepSubmit = () => {
+  const handleSleepSubmit = async () => {
     const hours = parseFloat(sleepHours)
     if (!hours || hours <= 0) {
       setSleepError(true)
       return
     }
 
-    const energyGain = Math.min(100, Math.round(hours * 12))
-    updateAttributes({ energy: energyGain })
-    addToast({
-      message: `+${energyGain} ENERGY`,
-      type: 'info'
-    })
+    setSleepLoading(true)
+    setSleepErrorMsg('')
+    try {
+      const result = await logActivity({
+        student_id: studentId,
+        activity: 'sleep',
+        value: hours,
+      })
 
-    setSleepHours('')
-    setSleepError(false)
+      await syncAfterActivity(result)
+      const energyGain = result.delta?.energy || 0
+      addToast({
+        message: energyGain > 0
+          ? `+${energyGain} ENERGY`
+          : (result.notes?.[0] || 'No energy gained'),
+        type: energyGain > 0 ? 'info' : 'error',
+      })
+
+      setSleepHours('')
+      setSleepError(false)
+    } catch (err) {
+      setSleepErrorMsg(`FAILED - ${err.message}`)
+    } finally {
+      setSleepLoading(false)
+    }
   }
 
-  const handleTasksSubmit = () => {
-    const checkedCount = tasks.filter(t => t.checked).length
-    if (checkedCount === 0) return
-
-    const wisGain = checkedCount * 5
-    updateAttributes({ WIS: wisGain })
-    addToast({
-      message: `+${wisGain} WIS`,
-      type: 'info'
-    })
-
-    setTasks(tasks.map(t => ({ ...t, checked: false })))
-  }
-
-  const toggleTask = (id) => {
-    setTasks(tasks.map(t => t.id === id ? { ...t, checked: !t.checked } : t))
-  }
-
-  const checkedCount = tasks.filter(t => t.checked).length
-  const studyDelta = studyDuration > 0 ? Math.round(parseFloat(studyDuration) * 0.4) : 0
-  const sleepDelta = sleepHours > 0 ? Math.min(100, Math.round(parseFloat(sleepHours) * 12)) : 0
+  const studyPreview = previewStudyEffects(
+    studyDuration,
+    student?.energy ?? 0,
+    activityTotals.study_int_today ?? 0
+  )
+  const sleepPreview = previewSleepEffects(sleepHours, student?.energy ?? 0, {
+    sleepLoggedToday: activityTotals.sleep_logged_today,
+  })
 
   return (
     <div className="min-h-screen bg-raw-white">
-      {/* Exit Button */}
       <button
         onClick={() => navigate('/')}
         className="fixed top-6 right-6 font-raw text-[11px] uppercase tracking-[1px] text-raw-white bg-raw-black border-[3px] border-raw-white px-4 py-2 hover:bg-raw-white hover:text-raw-black hover:border-raw-black z-50"
@@ -121,7 +150,7 @@ const Logger = () => {
       >
         ← EXIT
       </button>
-      {/* Page Header */}
+
       <div className="bg-raw-black px-8 py-10">
         <h1
           className="font-raw text-raw-white text-[48px] uppercase"
@@ -134,203 +163,72 @@ const Logger = () => {
         </p>
       </div>
 
-      {/* Section 1: Study */}
       <div className="border-b-[5px] border-raw-black px-8 py-10">
-        <div className="relative mb-6">
-          <div
-            className="font-raw text-[48px] text-raw-text-secondary absolute top-0 left-0"
-            style={{ lineHeight: '1.0' }}
-          >
-            01
-          </div>
-          <h2
-            className="font-raw text-[32px] text-raw-black uppercase relative z-10 pl-16"
-            style={{ lineHeight: '1.0' }}
-          >
-            STUDY SESSION
-          </h2>
-        </div>
-
+        <h2 className="font-raw text-[32px] text-raw-black uppercase mb-6">STUDY SESSION</h2>
         <div className="max-w-2xl space-y-6">
-          <div>
-            <label className="font-raw text-[11px] uppercase tracking-[1px] text-raw-black block mb-1">
-              SUBJECT
-            </label>
-            <input
-              type="text"
-              value={studyTopic}
-              onChange={(e) => setStudyTopic(e.target.value)}
-              placeholder="MATHEMATICS"
-              className="bg-raw-surface border-[3px] border-raw-border w-full font-mono text-[15px] px-3 py-2.5 text-raw-white focus:outline-none focus:border-[5px] placeholder:text-raw-text-tertiary"
-              style={{ borderRadius: '0px' }}
-            />
-          </div>
-
-          <div>
-            <label className="font-raw text-[11px] uppercase tracking-[1px] text-raw-black block mb-1">
-              DURATION (MINUTES)
-            </label>
-            <input
-              type="number"
-              value={studyDuration}
-              onChange={(e) => {
-                setStudyDuration(e.target.value)
-                setStudyError(false)
-              }}
-              placeholder="45"
-              className={`bg-raw-surface w-full font-mono text-[15px] px-3 py-2.5 text-raw-white focus:outline-none placeholder:text-raw-text-tertiary ${studyError
-                  ? 'border-[3px] border-raw-error'
-                  : 'border-[3px] border-raw-border focus:border-[5px]'
-                }`}
-              style={{ borderRadius: '0px' }}
-            />
-            {studyError && (
-              <p className="font-mono text-[12px] text-raw-error mt-1">
-                ENTER A VALUE GREATER THAN 0
-              </p>
-            )}
-          </div>
-
-          {studyDelta > 0 && (
-            <div className="font-raw text-[24px] text-raw-black uppercase">
-              +{studyDelta} INTELLIGENCE
+          <input
+            type="text"
+            value={studyTopic}
+            onChange={(e) => setStudyTopic(e.target.value)}
+            placeholder="MATHEMATICS"
+            className="bg-raw-surface border-[3px] border-raw-border w-full font-mono text-[15px] px-3 py-2.5"
+            style={{ borderRadius: '0px' }}
+          />
+          <input
+            type="number"
+            value={studyDuration}
+            onChange={(e) => {
+              setStudyDuration(e.target.value)
+              setStudyError(false)
+            }}
+            placeholder="45"
+            className="bg-raw-surface border-[3px] border-raw-border w-full font-mono text-[15px] px-3 py-2.5"
+            style={{ borderRadius: '0px' }}
+          />
+          {studyDuration !== '' && (
+            <div className="font-raw text-[24px] text-raw-black uppercase space-y-2">
+              {studyPreview.intGain > 0 && <div>+{studyPreview.intGain} INTELLIGENCE</div>}
+              {studyPreview.energyCost > 0 && (
+                <div className="text-[14px]">−{studyPreview.energyCost} ENERGY</div>
+              )}
+              <ActivityPreviewNotes notes={studyPreview.notes} />
             </div>
           )}
-
-          <ButtonRaw
-            size="lg"
-            onClick={handleStudySubmit}
-            disabled={studyLoading}
-          >
+          <ButtonRaw size="lg" onClick={handleStudySubmit} disabled={studyLoading}>
             {studyLoading ? 'LOGGING...' : 'LOG STUDY SESSION'}
           </ButtonRaw>
-          {studyErrorMsg && (
-            <div className="mt-4 font-raw text-raw-error text-[14px] uppercase tracking-[1px] border-[3px] border-raw-error p-4">
-              {studyErrorMsg}
-            </div>
-          )}
+          {studyErrorMsg && <p className="font-mono text-raw-error text-sm">{studyErrorMsg}</p>}
         </div>
       </div>
 
-      {/* Section 2: Sleep */}
-      <div className="border-b-[5px] border-raw-black px-8 py-10">
-        <div className="relative mb-6">
-          <div
-            className="font-raw text-[48px] text-raw-text-secondary absolute top-0 left-0"
-            style={{ lineHeight: '1.0' }}
-          >
-            02
-          </div>
-          <h2
-            className="font-raw text-[32px] text-raw-black uppercase relative z-10 pl-16"
-            style={{ lineHeight: '1.0' }}
-          >
-            SLEEP
-          </h2>
-        </div>
-
+      <div className="px-8 py-10">
+        <h2 className="font-raw text-[32px] text-raw-black uppercase mb-6">SLEEP</h2>
         <div className="max-w-2xl space-y-6">
-          <div>
-            <label className="font-raw text-[11px] uppercase tracking-[1px] text-raw-black block mb-1">
-              HOURS SLEPT
-            </label>
-            <input
-              type="number"
-              step="0.5"
-              value={sleepHours}
-              onChange={(e) => {
-                setSleepHours(e.target.value)
-                setSleepError(false)
-              }}
-              placeholder="7.5"
-              className={`bg-raw-surface w-full font-mono text-[15px] px-3 py-2.5 text-raw-white focus:outline-none placeholder:text-raw-text-tertiary ${sleepError
-                  ? 'border-[3px] border-raw-error'
-                  : 'border-[3px] border-raw-black focus:border-[5px]'
-                }`}
-              style={{ borderRadius: '0px' }}
-            />
-            {sleepError && (
-              <p className="font-mono text-[12px] text-raw-error mt-1">
-                ENTER A VALUE GREATER THAN 0
-              </p>
-            )}
-          </div>
-
-          {sleepDelta > 0 && (
-            <div className="font-raw text-[24px] text-raw-black uppercase">
-              +{sleepDelta} ENERGY
+          <input
+            type="number"
+            step="0.5"
+            value={sleepHours}
+            onChange={(e) => {
+              setSleepHours(e.target.value)
+              setSleepError(false)
+            }}
+            placeholder="7.5"
+            className="bg-raw-surface border-[3px] border-raw-border w-full font-mono text-[15px] px-3 py-2.5"
+            style={{ borderRadius: '0px' }}
+          />
+          {sleepHours !== '' && (
+            <div className="font-raw text-[24px] text-raw-black uppercase space-y-2">
+              {sleepPreview.energyGain > 0 && <div>+{sleepPreview.energyGain} ENERGY</div>}
+              <ActivityPreviewNotes
+                notes={sleepPreview.notes}
+                rateLabel={sleepPreview.rateLabel}
+              />
             </div>
           )}
-
-          <ButtonRaw
-            size="lg"
-            onClick={handleSleepSubmit}
-            disabled={sleepLoading}
-          >
+          <ButtonRaw size="lg" onClick={handleSleepSubmit} disabled={sleepLoading}>
             {sleepLoading ? 'LOGGING...' : 'LOG SLEEP'}
           </ButtonRaw>
-          {sleepErrorMsg && (
-            <div className="mt-4 font-raw text-raw-error text-[14px] uppercase tracking-[1px] border-[3px] border-raw-error p-4">
-              {sleepErrorMsg}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Section 3: Tasks */}
-      <div className="px-8 py-10">
-        <div className="relative mb-6">
-          <div
-            className="font-raw text-[48px] text-raw-text-secondary absolute top-0 left-0"
-            style={{ lineHeight: '1.0' }}
-          >
-            03
-          </div>
-          <h2
-            className="font-raw text-[32px] text-raw-black uppercase relative z-10 pl-16"
-            style={{ lineHeight: '1.0' }}
-          >
-            TASKS COMPLETED
-          </h2>
-        </div>
-
-        <div className="max-w-2xl">
-          {tasks.map((task) => (
-            <div
-              key={task.id}
-              onClick={() => toggleTask(task.id)}
-              className="border-b-[3px] border-raw-black py-4 flex items-center gap-4 cursor-pointer"
-            >
-              <div
-                className={`w-5 h-5 border-[3px] border-raw-black flex items-center justify-center focus:border-[5px] ${task.checked ? 'bg-raw-black' : 'bg-raw-white'
-                  }`}
-                style={{ borderRadius: '0px' }}
-              >
-                {task.checked && (
-                  <span className="font-raw text-raw-white text-[12px]">✓</span>
-                )}
-              </div>
-              <label className="font-raw text-raw-black text-sm uppercase tracking-[1px] cursor-pointer">
-                {task.label}
-              </label>
-            </div>
-          ))}
-
-          <div className="font-mono text-raw-black text-sm mt-4">
-            TASKS COMPLETED: {checkedCount} / 5
-          </div>
-
-          {checkedCount > 0 && (
-            <div className="font-raw text-[24px] text-raw-black uppercase mt-4">
-              +{checkedCount * 5} WISDOM
-            </div>
-          )}
-
-          <div className="mt-6">
-            <ButtonRaw size="lg" onClick={handleTasksSubmit}>
-              LOG TASKS
-            </ButtonRaw>
-          </div>
+          {sleepErrorMsg && <p className="font-mono text-raw-error text-sm">{sleepErrorMsg}</p>}
         </div>
       </div>
     </div>

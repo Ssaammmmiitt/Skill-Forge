@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { parseGroqApiError } from './groqErrors'
 
 const baseURL = import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL}/api`
@@ -16,77 +17,33 @@ const authHeaders = () => {
  * @returns {{ title: string, message: string, hint?: string, status?: number, retryable: boolean }}
  */
 export const parseCustomQuizError = (err) => {
+  const parsed = parseGroqApiError(err, 'quiz')
+  if (parsed.title === 'Request timed out') {
+    return {
+      ...parsed,
+      hint: 'Try fewer questions, pick an easier difficulty, or try again in a moment.',
+    }
+  }
+  if (parsed.title === 'Format error' || parsed.title === 'AI generation failed') {
+    const isFormat = parsed.title === 'Format error'
+    return {
+      ...parsed,
+      title: isFormat ? 'Quiz format error' : 'AI generation failed',
+      hint: isFormat
+        ? 'The model returned unusable output — try again or change the subject/chapter.'
+        : 'Try again with a different subject or fewer questions.',
+    }
+  }
+
+  if (parsed.title !== 'Request failed') {
+    return parsed
+  }
+
   const status = err.response?.status
   const apiError =
     err.response?.data?.error ||
     err.response?.data?.message ||
     null
-
-  if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
-    return {
-      title: 'Request timed out',
-      message: 'The AI took too long to respond.',
-      hint: 'Try fewer questions, pick an easier difficulty, or try again in a moment.',
-      status,
-      retryable: true,
-    }
-  }
-
-  if (!err.response) {
-    return {
-      title: 'Connection failed',
-      message: 'Could not reach the server.',
-      hint: 'Check that the API is running and your network connection is stable.',
-      retryable: true,
-    }
-  }
-
-  if (status === 401) {
-    return {
-      title: 'Session expired',
-      message: apiError || 'You need to sign in again.',
-      hint: 'Log out and log back in, then retry.',
-      status,
-      retryable: false,
-    }
-  }
-
-  if (status === 503) {
-    return {
-      title: 'AI not configured',
-      message: apiError || 'Groq API key is missing on the server.',
-      hint: 'Add GROQ_API_KEY to the project root .env file and restart the API.',
-      status,
-      retryable: false,
-    }
-  }
-
-  if (status === 429) {
-    return {
-      title: 'Rate limited',
-      message: apiError || 'Too many AI requests right now.',
-      hint: 'Wait a minute and try again, or add a second GROQ_API_KEY in .env.',
-      status,
-      retryable: true,
-    }
-  }
-
-  if (status === 502) {
-    const msg = apiError || 'The AI service returned an error.'
-    const isRateLimit = /rate limit|429/i.test(msg)
-    const isJson = /invalid quiz json|quiz format|no quiz questions/i.test(msg)
-    return {
-      title: isRateLimit ? 'AI rate limited' : isJson ? 'Quiz format error' : 'AI generation failed',
-      message: msg,
-      hint: isRateLimit
-        ? 'Wait a moment and retry, or configure an extra Groq API key.'
-        : isJson
-          ? 'The model returned unusable output — try again or change the subject/chapter.'
-          : 'Try again with a different subject or fewer questions.',
-      status,
-      retryable: true,
-    }
-  }
 
   if (status === 400) {
     return {

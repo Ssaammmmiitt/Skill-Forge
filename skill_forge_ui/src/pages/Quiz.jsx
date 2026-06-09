@@ -8,6 +8,7 @@ import { getQuiz, submitQuiz } from '../api/quiz'
 import {
   loadDocumentQuizSession,
   clearDocumentQuizSession,
+  submitDocumentQuiz,
 } from '../api/reader'
 import {
   loadCustomQuizSession,
@@ -100,6 +101,7 @@ const Quiz = () => {
     return null
   })
   const [customQuizResult, setCustomQuizResult] = useState(null)
+  const [documentQuizResult, setDocumentQuizResult] = useState(null)
 
   // Synchronize state and reset quiz elements when location/navigation state changes
   useEffect(() => {
@@ -117,6 +119,7 @@ const Quiz = () => {
       setQuestions([])
       setError(null)
       setCustomQuizResult(null)
+      setDocumentQuizResult(null)
     } else if (stateTopic) {
       clearDocumentQuizSession()
       clearCustomQuizSession()
@@ -127,6 +130,7 @@ const Quiz = () => {
       setQuestions([])
       setError(null)
       setCustomQuizResult(null)
+      setDocumentQuizResult(null)
     } else if (fromReader) {
       const docQ = loadDocumentQuizSession()
       clearCustomQuizSession()
@@ -137,6 +141,7 @@ const Quiz = () => {
       setQuestions([])
       setError(null)
       setCustomQuizResult(null)
+      setDocumentQuizResult(null)
     } else {
       clearDocumentQuizSession()
       clearCustomQuizSession()
@@ -147,11 +152,14 @@ const Quiz = () => {
       setQuestions([])
       setError(null)
       setCustomQuizResult(null)
+      setDocumentQuizResult(null)
     }
   }, [location])
 
   const isDocumentQuiz = Boolean(documentQuiz?.questions?.length)
   const isCustomQuiz = Boolean(customQuiz?.questions?.length)
+  const isPracticeQuiz = isCustomQuiz || isDocumentQuiz
+  const practiceQuizResult = customQuizResult || documentQuizResult
   const documentFilename = documentQuiz?.filename
   const customQuizLabel = customQuiz?.subject
   const customQuizChapter = customQuiz?.chapter
@@ -194,6 +202,7 @@ const Quiz = () => {
     setCognitiveResult(null)
     setGameMasterResult(null)
     setCustomQuizResult(null)
+    setDocumentQuizResult(null)
 
     const perQuestionTimer = isCustomQuiz
       ? (customQuiz?.timer_seconds ?? DEFAULT_QUESTION_TIME_SECONDS)
@@ -342,7 +351,39 @@ const Quiz = () => {
         const newLevel = result.student?.level || result.new_level || oldLevel
 
         if (newLevel > oldLevel) {
-          setLevelUp({ newLevel, isCustomQuiz: true })
+          setLevelUp({ newLevel, isPracticeQuiz: true })
+        }
+
+        if (result.student) {
+          setStudent(result.student)
+        } else if (user?.student_id) {
+          await refreshStudent(user.student_id)
+        }
+
+        if (result.xp_earned !== undefined) {
+          setXpEarned(result.xp_earned)
+        }
+
+        setPhase('complete')
+        return
+      }
+
+      if (isDocumentQuiz) {
+        const result = await submitDocumentQuiz({
+          student_id: studentId,
+          answers: apiAnswers,
+          difficulty: documentQuiz?.difficulty ?? 5,
+          time_taken: Math.max(totalTimeSeconds, answers.length),
+          filename: documentQuiz?.filename,
+        })
+
+        setDocumentQuizResult(result)
+
+        const oldLevel = student?.level || 1
+        const newLevel = result.student?.level || result.new_level || oldLevel
+
+        if (newLevel > oldLevel) {
+          setLevelUp({ newLevel, isPracticeQuiz: true })
         }
 
         if (result.student) {
@@ -849,13 +890,13 @@ const Quiz = () => {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.35 }}
               >
-                {isCustomQuiz ? (
+                {isPracticeQuiz ? (
                   <>
                     <div className="font-arcade text-[10px] md:text-[12px] text-arcade-secondary tracking-[2px] uppercase font-bold">
                       PRACTICE REWARDS //
                     </div>
                     <div className="font-arcade text-[14px] md:text-[18px] text-space-star tracking-[2px] mt-3 font-bold">
-                      INT +{customQuizResult?.attribute_delta?.INT ?? 0} · WIS +{customQuizResult?.attribute_delta?.WIS ?? 0}
+                      INT +{practiceQuizResult?.attribute_delta?.INT ?? 0} · WIS +{practiceQuizResult?.attribute_delta?.WIS ?? 0}
                     </div>
                   </>
                 ) : (
@@ -907,15 +948,20 @@ const Quiz = () => {
                   <ButtonOffset size="md" onClick={handleStart}>
                     RETRY
                   </ButtonOffset>
-                  <ButtonOffset size="md" onClick={() => navigate(isCustomQuiz ? '/app/quiz/custom' : '/app/analytics')}>
-                    {isCustomQuiz ? 'NEW CUSTOM QUIZ' : 'VIEW STATS'}
-                  </ButtonOffset>
-                  {isDocumentQuiz && (
+                  {isDocumentQuiz ? (
                     <ButtonOffset size="md" onClick={() => navigate('/app/reader')}>
                       BACK TO READER
                     </ButtonOffset>
+                  ) : isCustomQuiz ? (
+                    <ButtonOffset size="md" onClick={() => navigate('/app/quiz/custom')}>
+                      NEW CUSTOM QUIZ
+                    </ButtonOffset>
+                  ) : (
+                    <ButtonOffset size="md" onClick={() => navigate('/app/analytics')}>
+                      VIEW STATS
+                    </ButtonOffset>
                   )}
-                  {isCustomQuiz && (
+                  {isPracticeQuiz && (
                     <ButtonOffset size="md" onClick={() => navigate('/dashboard')}>
                       DASHBOARD
                     </ButtonOffset>
@@ -925,7 +971,7 @@ const Quiz = () => {
             </div>
           </motion.div>
 
-          {!isCustomQuiz && (
+          {!isPracticeQuiz && (
           <motion.div
             className="max-w-lg w-full shrink-0 mb-8"
             initial={{ opacity: 0, y: 20 }}

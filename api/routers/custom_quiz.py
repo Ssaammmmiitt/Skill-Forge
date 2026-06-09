@@ -8,10 +8,8 @@ from api.deps import DbConn, get_current_user_id
 from api.exceptions import ApiError
 from api.responses import error, success
 from api.services.groq_custom_quiz import CUSTOM_QUIZ_MAX_QUESTIONS, generate_custom_quiz
-from data.models import get_student_by_id, update_student
-from engine.custom_quiz_rewards import apply_custom_quiz_rewards, compute_custom_quiz_rewards
+from engine.practice_quiz_submit import submit_practice_quiz
 from engine.quiz_shuffle import shuffle_question_pool
-from engine.rewards import award_xp, update_streak
 
 router = APIRouter(prefix="/api/custom-quiz", tags=["custom-quiz"])
 
@@ -141,79 +139,18 @@ def submit_custom_quiz(body: CustomQuizSubmitBody, conn: DbConn):
     if difficulty_level not in DIFFICULTY_LEVELS:
         return error("difficulty_level must be 1, 2, or 3", 400)
 
-    student = get_student_by_id(conn, body.student_id)
-    if student is None:
-        return error("Student not found", 404)
-
-    correct_count = 0
-    for ans in body.answers:
-        chosen = ans.get("chosen_index")
-        correct = ans.get("correct_index")
-        if chosen is not None and correct is not None and int(chosen) == int(correct):
-            correct_count += 1
-
-    total = len(body.answers)
-    score = (correct_count / total) * 100.0
-
-    for ans in body.answers:
-        chosen = ans.get("chosen_index")
-        correct = ans.get("correct_index")
-        got_correct = (
-            chosen is not None
-            and correct is not None
-            and int(chosen) == int(correct)
+    try:
+        result = submit_practice_quiz(
+            conn,
+            student_id=body.student_id,
+            answers=body.answers,
+            difficulty_level=difficulty_level,
+            subject=body.subject,
+            chapter=body.chapter,
         )
-        student = update_streak(student, got_correct)
+    except LookupError:
+        return error("Student not found", 404)
+    except ValueError as exc:
+        return error(str(exc), 400)
 
-    before_xp = student.xp
-    all_events: list[str] = []
-
-    student, events = award_xp(student, "quiz_complete")
-    all_events.extend(events)
-
-    if score == 100.0:
-        student, events = award_xp(student, "perfect_score")
-        all_events.extend(events)
-
-    if student.streak == 3:
-        student, events = award_xp(student, "streak_3")
-        all_events.extend(events)
-    elif student.streak == 5:
-        student, events = award_xp(student, "streak_5")
-        all_events.extend(events)
-
-    xp_earned = student.xp - before_xp
-
-    rewards = compute_custom_quiz_rewards(
-        score, difficulty_level, correct_count, total
-    )
-    student, attr_delta = apply_custom_quiz_rewards(student, rewards)
-
-    update_student(conn, student)
-    conn.commit()
-
-    return success(
-        {
-            "score": round(score, 1),
-            "xp_earned": xp_earned,
-            "events": list(dict.fromkeys(all_events)),
-            "new_level": student.level,
-            "attribute_delta": attr_delta,
-            "rewards": rewards,
-            "practice_mode": True,
-            "subject": body.subject,
-            "chapter": body.chapter,
-            "student": {
-                "student_id": student.student_id,
-                "name": student.name,
-                "xp": student.xp,
-                "level": student.level,
-                "streak": student.streak,
-                "INT": student.INT,
-                "WIS": student.WIS,
-                "energy": student.energy,
-                "learning_style": student.learning_style,
-                "topic_weakness": student.topic_weakness,
-            },
-        }
-    )
+    return success(result)

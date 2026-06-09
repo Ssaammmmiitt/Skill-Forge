@@ -9,6 +9,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fastapi.testclient import TestClient
 
 from api.app import create_app
+from api.deps import get_db as api_get_db
 from data.models import create_tables, Student, Session, insert_student, insert_session, get_db
 
 
@@ -53,12 +54,17 @@ def client(monkeypatch):
     def mock_get_db():
         return db_conn
 
+    def mock_get_db_dep():
+        yield db_conn
+
     monkeypatch.setattr("data.models.get_db", mock_get_db)
     monkeypatch.setattr("api.deps._get_db", mock_get_db)
 
     app = create_app()
+    app.dependency_overrides[api_get_db] = mock_get_db_dep
     with TestClient(app) as test_client:
         yield test_client
+    app.dependency_overrides.clear()
 
     db_conn.close()
 
@@ -77,6 +83,38 @@ def test_get_student_not_found(client):
     res_data = response.json()
     assert res_data["data"] is None
     assert res_data["error"] == "Student not found"
+
+
+def test_log_activity_sleep(client):
+    payload = {
+        "student_id": "fixture_id",
+        "activity": "sleep",
+        "value": 8.0,
+    }
+    response = client.post("/api/student/log-activity", json=payload)
+    assert response.status_code == 200
+    res_data = response.json()
+    assert res_data["error"] is None
+    assert res_data["data"]["delta"]["energy"] > 0
+
+    again = client.post("/api/student/log-activity", json=payload)
+    assert again.status_code == 200
+    again_data = again.json()
+    assert again_data["data"]["delta"]["energy"] == 0
+    assert "Sleep already logged today" in again_data["data"]["notes"][0]
+
+
+def test_activity_totals_endpoint(client):
+    client.post(
+        "/api/student/log-activity",
+        json={"student_id": "fixture_id", "activity": "study", "value": 30.0},
+    )
+    response = client.get("/api/student/fixture_id/activity-totals")
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["study_int_today"] > 0
+    assert data["study_minutes_today"] == 30.0
+    assert data["sleep_logged_today"] is False
 
 
 def test_log_activity_study(client):
@@ -352,6 +390,53 @@ def test_submit_custom_quiz_does_not_add_session(client):
         "time_taken": 30,
     }
     response = client.post("/api/custom-quiz/submit", json=payload)
+    assert response.status_code == 200
+    after = count_sessions()
+    assert after == before
+
+
+def test_submit_document_quiz_valid(client):
+    payload = {
+        "student_id": "fixture_id",
+        "answers": [
+            {"question_id": "dq1", "chosen_index": 0, "correct_index": 0, "topic": "notes"},
+            {"question_id": "dq2", "chosen_index": 1, "correct_index": 1, "topic": "notes"},
+            {"question_id": "dq3", "chosen_index": 0, "correct_index": 1, "topic": "notes"},
+        ],
+        "difficulty": 5,
+        "time_taken": 75,
+        "filename": "lecture.pdf",
+    }
+    response = client.post("/api/reader/quiz/submit", json=payload)
+    assert response.status_code == 200
+    res_data = response.json()
+    assert res_data["error"] is None
+    assert res_data["data"]["practice_mode"] is True
+    assert res_data["data"]["xp_earned"] >= 50
+    assert "attribute_delta" in res_data["data"]
+    assert res_data["data"]["filename"] == "lecture.pdf"
+
+
+def test_submit_document_quiz_does_not_add_session(client):
+    db_conn = get_db()
+
+    def count_sessions():
+        return db_conn.execute(
+            "SELECT COUNT(*) FROM sessions WHERE student_id = ?",
+            ("fixture_id",),
+        ).fetchone()[0]
+
+    before = count_sessions()
+    payload = {
+        "student_id": "fixture_id",
+        "answers": [
+            {"question_id": "dq1", "chosen_index": 0, "correct_index": 0, "topic": "notes"},
+        ],
+        "difficulty": 8,
+        "time_taken": 40,
+        "filename": "slides.pdf",
+    }
+    response = client.post("/api/reader/quiz/submit", json=payload)
     assert response.status_code == 200
     after = count_sessions()
     assert after == before

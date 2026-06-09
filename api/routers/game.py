@@ -105,6 +105,21 @@ def _student_attributes(student) -> dict:
     }
 
 
+@router.get("/student/{student_id}/activity-totals")
+def get_activity_totals(
+    student_id: str,
+    conn: DbConn,
+    activity_date: str | None = Query(default=None),
+):
+    student = get_student_by_id(conn, student_id)
+    if student is None:
+        return error("Student not found", 404)
+
+    date_str = activity_date or datetime.now(timezone.utc).date().isoformat()
+    totals = get_activity_totals_for_date(conn, student_id, date_str)
+    return success({"activity_date": date_str, **totals})
+
+
 @router.get("/student/{student_id}")
 def get_student(student_id: str, conn: DbConn):
     student = get_student_by_id(conn, student_id)

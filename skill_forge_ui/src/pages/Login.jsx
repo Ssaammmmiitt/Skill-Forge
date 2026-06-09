@@ -169,6 +169,8 @@ const Login = () => {
               </label>
               <input
                 type="text"
+                name="username"
+                autoComplete="username"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 placeholder="username or email"

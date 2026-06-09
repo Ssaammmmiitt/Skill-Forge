@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { groqErrorMessage } from './groqErrors'
 
 const baseURL = import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL}/api`
@@ -36,11 +37,7 @@ export const analyzeDocument = async (file, mode, onUploadProgress) => {
     }
     return body?.data ?? body
   } catch (err) {
-    const message =
-      err.response?.data?.error ||
-      err.message ||
-      'Could not process document'
-    throw new Error(message)
+    throw new Error(groqErrorMessage(err, 'analyze'))
   }
 }
 
@@ -68,11 +65,7 @@ export const generateDocumentQuiz = async (content, filename, difficulty = 5) =>
     }
     return body?.data ?? body
   } catch (err) {
-    const message =
-      err.response?.data?.error ||
-      err.message ||
-      'Could not generate quiz'
-    throw new Error(message)
+    throw new Error(groqErrorMessage(err, 'quiz'))
   }
 }
 
@@ -93,4 +86,30 @@ export const loadDocumentQuizSession = () => {
 
 export const clearDocumentQuizSession = () => {
   sessionStorage.removeItem(DOCUMENT_QUIZ_STORAGE_KEY)
+}
+
+export const submitDocumentQuiz = async (payload) => {
+  const token = localStorage.getItem('sf_token')
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  try {
+    const response = await axios.post(
+      `${baseURL}/reader/quiz/submit`,
+      payload,
+      { headers, timeout: 15000 }
+    )
+
+    const body = response.data
+    if (body?.error) {
+      throw new Error(body.error)
+    }
+    return body?.data ?? body
+  } catch (err) {
+    const message =
+      err.response?.data?.error ||
+      err.message ||
+      'Failed to submit document quiz'
+    throw new Error(message)
+  }
 }

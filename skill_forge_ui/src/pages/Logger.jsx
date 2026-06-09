@@ -1,13 +1,19 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import ButtonOffset from '../components/ui/ButtonOffset'
 import { useNotifStore } from '../store/useNotifStore'
 import { useStudentStore } from '../store/useStudentStore'
 import { useAuthStore } from '../store/useAuthStore'
-import { logActivity } from '../api/student'
+import { getActivityTotals, logActivity } from '../api/student'
 import { resolveStudentId } from '../utils/resolveStudentId'
-import { previewStudyEffects, previewSleepEffects, STUDY_MIN_MINUTES } from '../utils/activityPreview'
+import {
+  previewStudyEffects,
+  previewSleepEffects,
+  STUDY_MIN_MINUTES,
+  emptyActivityTotals,
+} from '../utils/activityPreview'
+import ActivityPreviewNotes from '../components/activity/ActivityPreviewNotes'
 import PageIntro from '../components/layout/PageIntro'
 
 const Logger = () => {
@@ -43,6 +49,21 @@ const Logger = () => {
   const [sleepError, setSleepError] = useState(false)
   const [sleepLoading, setSleepLoading] = useState(false)
   const [sleepErrorMsg, setSleepErrorMsg] = useState('')
+  const [activityTotals, setActivityTotals] = useState(emptyActivityTotals)
+
+  const refreshActivityTotals = useCallback(async () => {
+    if (!studentId) return
+    try {
+      const totals = await getActivityTotals(studentId)
+      setActivityTotals(totals)
+    } catch {
+      setActivityTotals(emptyActivityTotals())
+    }
+  }, [studentId])
+
+  useEffect(() => {
+    refreshActivityTotals()
+  }, [refreshActivityTotals])
 
 
   const handleStudySubmit = async () => {
@@ -62,6 +83,7 @@ const Logger = () => {
       })
 
       await syncAfterActivity(result)
+      await refreshActivityTotals()
       const intGain = result.delta?.INT || 0
       const energyCost = result.delta?.energy || 0
       const note = result.notes?.[0]
@@ -99,6 +121,7 @@ const Logger = () => {
       })
 
       await syncAfterActivity(result)
+      await refreshActivityTotals()
       const energyGain = result.delta?.energy || 0
       const note = result.notes?.[0]
       addToast({
@@ -117,8 +140,18 @@ const Logger = () => {
     }
   }
 
-  const studyPreview = previewStudyEffects(studyDuration, student?.energy ?? 0)
-  const sleepPreview = previewSleepEffects(sleepHours, student?.energy ?? 0)
+  const studyPreview = previewStudyEffects(
+    studyDuration,
+    student?.energy ?? 0,
+    activityTotals.study_int_today ?? 0
+  )
+  const sleepPreview = previewSleepEffects(sleepHours, student?.energy ?? 0, {
+    sleepLoggedToday: activityTotals.sleep_logged_today,
+  })
+  const showStudyPreview =
+    studyDuration !== '' && (studyPreview.intGain > 0 || studyPreview.notes.length > 0)
+  const showSleepPreview =
+    sleepHours !== '' && (sleepPreview.energyGain > 0 || sleepPreview.notes.length > 0)
 
   return (
     <motion.div
@@ -133,7 +166,7 @@ const Logger = () => {
           purpose="Record study and sleep outside quizzes. Study builds INT but costs energy; sleep restores energy best at 7–9 hours."
           steps={[
             `Study ${STUDY_MIN_MINUTES}+ min → INT (tapers after 45 min, daily cap 15)`,
-            'Sleep → Energy (7–9 h optimal, one log per day)',
+            'Sleep → Energy: 10/h (7–9 h), 7/h (6–7 or 9–10 h), 4/h otherwise — one log per day',
             'Daily tasks → WIS on the Tasks page (max 5/day)',
           ]}
         />
@@ -188,25 +221,18 @@ const Logger = () => {
                 )}
               </div>
 
-              {studyPreview.intGain > 0 && (
+              {showStudyPreview && (
                 <div className="font-raw text-[14px] text-raw-text uppercase space-y-1">
-                  <div>+{studyPreview.intGain} INTELLIGENCE</div>
+                  {studyPreview.intGain > 0 && (
+                    <div>+{studyPreview.intGain} INTELLIGENCE</div>
+                  )}
                   {studyPreview.energyCost > 0 && (
                     <div className="text-raw-text-secondary text-[11px]">
                       −{studyPreview.energyCost} ENERGY (focus cost)
                     </div>
                   )}
-                  {studyPreview.note && (
-                    <div className="text-raw-text-tertiary text-[10px] normal-case font-mono">
-                      {studyPreview.note}
-                    </div>
-                  )}
+                  <ActivityPreviewNotes notes={studyPreview.notes} />
                 </div>
-              )}
-              {studyDuration > 0 && studyPreview.intGain === 0 && (
-                <p className="font-mono text-[11px] text-raw-text-tertiary">
-                  {studyPreview.note || `Minimum ${STUDY_MIN_MINUTES} minutes required`}
-                </p>
               )}
 
               <ButtonOffset
@@ -261,14 +287,21 @@ const Logger = () => {
                 )}
               </div>
 
-              {sleepPreview.energyGain > 0 && (
+              {activityTotals.sleep_logged_today && (
+                <p className="font-mono text-[11px] text-raw-text-tertiary">
+                  Sleep already logged today — one entry per day.
+                </p>
+              )}
+
+              {showSleepPreview && (
                 <div className="font-raw text-[14px] text-raw-text uppercase space-y-1">
-                  <div>+{sleepPreview.energyGain} ENERGY</div>
-                  {sleepPreview.note && (
-                    <div className="text-raw-text-tertiary text-[10px] normal-case font-mono">
-                      {sleepPreview.note}
-                    </div>
+                  {sleepPreview.energyGain > 0 && (
+                    <div>+{sleepPreview.energyGain} ENERGY</div>
                   )}
+                  <ActivityPreviewNotes
+                    notes={sleepPreview.notes}
+                    rateLabel={sleepPreview.rateLabel}
+                  />
                 </div>
               )}
 

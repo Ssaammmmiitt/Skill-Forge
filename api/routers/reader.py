@@ -4,14 +4,15 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from pydantic import BaseModel, Field
 
-from api.deps import get_current_user_id
+from api.deps import DbConn, get_current_user_id
 from api.env_config import get_groq_api_keys
 from api.exceptions import ApiError
-from api.responses import success
+from api.responses import error, success
 from api.services.groq_quiz import generate_document_quiz
 from api.services.groq_reader import generate_study_content
 from engine.document_extract import extract_text
 from engine.file_compress import prepare_upload
+from engine.practice_quiz_submit import document_difficulty_to_level, submit_practice_quiz
 from engine.quiz_shuffle import shuffle_question_pool
 
 router = APIRouter(prefix="/api/reader", tags=["reader"])
@@ -33,6 +34,55 @@ class DocumentQuizBody(BaseModel):
     content: str = Field(..., min_length=80)
     filename: str = Field(default="document.pdf")
     difficulty: int = Field(default=5, ge=1, le=10)
+
+
+class DocumentQuizSubmitBody(BaseModel):
+    student_id: str | None = None
+    answers: list | None = None
+    difficulty: int = Field(default=5, ge=1, le=10)
+    time_taken: int | None = None
+    filename: str | None = None
+
+
+@router.post("/quiz/submit")
+def submit_document_quiz(body: DocumentQuizSubmitBody, conn: DbConn):
+    """
+    Submit a document reader quiz result.
+    Awards XP, streak, and small INT/WIS gains (practice mode).
+    Does NOT update adaptive learning metrics or session history.
+    """
+    if (
+        not body.student_id
+        or not isinstance(body.answers, list)
+        or body.time_taken is None
+    ):
+        return error("Missing required fields", 400)
+
+    if len(body.answers) == 0:
+        return error("Answers list cannot be empty", 400)
+
+    try:
+        int(body.difficulty)
+        int(body.time_taken)
+    except (ValueError, TypeError):
+        return error("difficulty and time_taken must be integers", 400)
+
+    difficulty_level = document_difficulty_to_level(body.difficulty)
+
+    try:
+        result = submit_practice_quiz(
+            conn,
+            student_id=body.student_id,
+            answers=body.answers,
+            difficulty_level=difficulty_level,
+            filename=body.filename,
+        )
+    except LookupError:
+        return error("Student not found", 404)
+    except ValueError as exc:
+        return error(str(exc), 400)
+
+    return success(result)
 
 
 @router.post("/quiz")
